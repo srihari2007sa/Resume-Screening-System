@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KIT AI | Next-Gen Resume Screener</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="styles.css?v=3.0.0">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="brand">
+                <i class="fa-solid fa-wand-magic-sparkles brand-logo"></i>
+                <div class="brand-text">
+                    <h1>KIT AI</h1>
+                    <span>AI Screener Engine</span>
+                </div>
+            </div>
+            
+            <nav class="nav-links">
+                <a href="#dashboard" class="nav-item active" data-target="dashboard-section">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#jobs" class="nav-item" data-target="jobs-section">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <span>Job Openings</span>
+                </a>
+                <a href="#screen" class="nav-item" data-target="screen-section">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span>Screen Resumes</span>
+                </a>
+                <a href="#analytics" class="nav-item" data-target="analytics-section">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Recruitment Insights</span>
+                </a>
+                <a href="#batch" class="nav-item" data-target="batch-section">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <span>Batch Screening</span>
+                </a>
+                <a href="#compare" class="nav-item" data-target="compare-section">
+                    <i class="fa-solid fa-code-compare"></i>
+                    <span>Compare Candidates</span>
+                </a>
+                <a href="#dna" class="nav-item" data-target="dna-section">
+                    <i class="fa-solid fa-dna"></i>
+                    <span>Career DNA</span>
+                </a>
+                <a href="#settings" class="nav-item" data-target="settings-section">
+                    <i class="fa-solid fa-sliders"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-profile">
+                    <div class="avatar"><i class="fa-solid fa-user-tie"></i></div>
+                    <div class="user-info">
+                        <p class="user-name" id="profile-username">Talent Admin</p>
+                        <p class="user-role">Recruiter Access</p>
+                    </div>
+                    <button class="btn-icon-only" id="btn-logout" title="Sign Out" style="margin-left: auto; background: transparent; border: none; cursor: pointer; color: var(--text-secondary);">
+                        <i class="fa-solid fa-right-from-bracket"></i>
+                    </button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Workspace -->
+        <main class="main-content">
+            <!-- App Header -->
+            <header class="app-header">
+                <div class="header-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" id="global-search" placeholder="Quick search candidates, skills or jobs...">
+                </div>
+                <div class="header-actions">
+                    <div class="database-badge active-db-badge" id="current-db-status">
+                        <i class="fa-solid fa-database"></i>
+                        <span>SQLite/H2 Active</span>
+                    </div>
+                    <div class="notification-bell">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="badge-dot"></span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard-section" class="content-section active">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>Recruitment Overview</h2>
+                        <p class="subtitle">Track screening volumes, matches, and selection rates in real time.</p>
+                    </div>
+                </div>
+
+                <!-- Stats Cards Grid -->
+                <div class="stats-grid">
+                    <div class="stat-card blue-glow">
+                        <div class="stat-icon"><i class="fa-solid fa-file-invoice"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Total Screened</span>
+                            <h3 id="stat-total-screened">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card green-glow">
+                        <div class="stat-icon"><i class="fa-solid fa-circle-check"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Shortlisted</span>
+                            <h3 id="stat-shortlisted">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card purple-glow">
+                        <div class="stat-icon"><i class="fa-solid fa-star"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Average Fit Score</span>
+                            <h3 id="stat-avg-score">0.0%</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card orange-glow">
+                        <div class="stat-icon"><i class="fa-solid fa-circle-xmark"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Rejected / Gaps</span>
+                            <h3 id="stat-rejected">0</h3>
+                        </div>
+                    </div>
+                    <div class="stat-card dna-glow">
+                        <div class="stat-icon"><i class="fa-solid fa-dna"></i></div>
+                        <div class="stat-info">
+                            <span class="stat-label">Top Archetype</span>
+                            <h3 id="stat-top-archetype" style="font-size:14px;margin-top:6px;">—</h3>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary Panel Grid -->
+                <div class="panels-grid">
+                    <!-- Resumes List Panel -->
+                    <div class="glass-panel main-panel">
+                        <div class="panel-header">
+                            <h4>Recent Screenings</h4>
+                            <div class="panel-actions">
+                                <button class="btn btn-secondary btn-sm" id="btn-refresh-screenings">
+                                    <i class="fa-solid fa-arrows-rotate"></i> Refresh
+                                </button>
+                            </div>
+                        </div>
+                        <div class="table-container">
+                            <table class="data-table" id="screenings-table">
+                                <thead>
+                                    <tr>
+                                        <th>Candidate Info</th>
+                                        <th>Target Job</th>
+                                        <th>Match score</th>
+                                        <th>Status</th>
+                                        <th>Engine</th>
+                                        <th>Screened Date</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic content -->
+                                    <tr class="empty-state-row">
+                                        <td colspan="7" class="text-center">
+                                            <div class="empty-state">
+                                                <i class="fa-regular fa-folder-open"></i>
+                                                <p>No processed resumes found. Upload and screen candidate resumes to get started!</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Job Openings Section -->
+            <section id="jobs-section" class="content-section">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>Job Openings (Requisitions)</h2>
+                        <p class="subtitle">Create and manage target jobs and profiles to screen candidates against.</p>
+                    </div>
+                    <button class="btn btn-primary" id="btn-open-create-job-modal">
+                        <i class="fa-solid fa-plus"></i> New Requisition
+                    </button>
+                </div>
+
+                <div class="jobs-list-grid" id="jobs-grid-container">
+                    <!-- Dynamic Job Cards -->
+                    <div class="empty-state-card">
+                        <i class="fa-solid fa-briefcase"></i>
+                        <p>No job requisitions created. Create a job profile containing required skills and experience to run screening.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Screen Resumes Section -->
+            <section id="screen-section" class="content-section">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>Run Resume Screening</h2>
+                        <p class="subtitle">Perform intelligent mapping and shortlisting on single or batch resumes.</p>
+                    </div>
+                </div>
+
+                <div class="two-column-layout">
+                    <!-- Config & File uploader -->
+                    <div class="glass-panel">
+                        <h4>Screening Configuration</h4>
+                        <form id="screening-form" class="form-container">
+                            <div class="form-group">
+                                <label for="screen-job-select">Target Requisition / Job</label>
+                                <select id="screen-job-select" required>
+                                    <option value="" disabled selected>Select Job Opening...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Screening Engine</label>
+                                <div class="toggle-container">
+                                    <div class="engine-toggle-card active" id="engine-offline" data-engine="offline">
+                                        <i class="fa-solid fa-database"></i>
+                                        <div class="toggle-text">
+                                            <p class="toggle-title">Offline Engine</p>
+                                            <span class="toggle-desc">Pure Java NLP matching</span>
+                                        </div>
+                                    </div>
+                                    <div class="engine-toggle-card" id="engine-gemini" data-engine="gemini">
+                                        <i class="fa-solid fa-brain"></i>
+                                        <div class="toggle-text">
+                                            <p class="toggle-title">Gemini AI Model</p>
+                                            <span class="toggle-desc">Gen-AI details & feedback</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="form-group gemini-api-key-group hidden" id="gemini-key-input-container">
+                                <label for="screen-api-key">Gemini Developer API Key</label>
+                                <div class="password-wrapper">
+                                    <input type="password" id="screen-api-key" placeholder="AI Key (Saved locally in browser)...">
+                                    <button type="button" class="toggle-password" id="btn-toggle-key-visibility">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                                <p class="help-text"><i class="fa-solid fa-circle-info"></i> Key is stored directly on your computer's local browser and never exposed to other servers.</p>
+                            </div>
+
+                            <!-- Upload Zone -->
+                            <div class="form-group">
+                                <label>Upload Candidate Resumes</label>
+                                <div class="upload-zone" id="resume-drag-drop-zone">
+                                    <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
+                                    <p class="drag-title">Drag & Drop Resume File Here</p>
+                                    <p class="drag-formats">Supports PDF, DOCX, TXT, RTF (Up to 10MB)</p>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-browse-file">Browse File</button>
+                                    <input type="file" id="resume-file-input" class="hidden" accept=".pdf,.docx,.txt,.doc,.rtf">
+                                </div>
+                                <div class="selected-file-badge hidden" id="selected-file-panel">
+                                    <i class="fa-solid fa-file-pdf" id="selected-file-icon"></i>
+                                    <span class="filename" id="selected-file-name">resume.pdf</span>
+                                    <button type="button" class="remove-file" id="btn-remove-selected-file"><i class="fa-solid fa-xmark"></i></button>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-run-screening" disabled>
+                                <i class="fa-solid fa-play"></i> Run Intelligent Screening <span class="kbd">Ctrl+Enter</span>
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Live Screening Status log / dynamic result card -->
+                    <div class="glass-panel console-panel">
+                        <div class="panel-header">
+                            <h4>Screening Terminal & Result</h4>
+                            <span class="status-indicator idle" id="terminal-status-badge">Idle</span>
+                        </div>
+                        <div class="console-box" id="screening-console">
+                            <div class="console-line text-muted">> Waiting to initiate candidate screening pipeline...</div>
+                        </div>
+                        <!-- Live Result Preview (rendered here once screening completes) -->
+                        <div class="screening-live-result hidden" id="live-screening-result-card">
+                            <div class="result-top">
+                                <div class="result-details">
+                                    <h4 id="live-result-name">Jane Doe</h4>
+                                    <span class="result-email" id="live-result-email"><i class="fa-regular fa-envelope"></i> jane@example.com</span>
+                                </div>
+                                <div class="result-score-wrapper">
+                                    <div class="score-circle-sm" id="live-result-score-circle">
+                                        <span id="live-result-score-text">85%</span>
+                                    </div>
+                                    <span class="score-label">Match Score</span>
+                                </div>
+                            </div>
+                            <div class="result-bottom-tags">
+                                <div class="tag-row">
+                                    <span class="tag-label">Exp Match:</span>
+                                    <span class="badge" id="live-result-exp">5 Yrs</span>
+                                </div>
+                                <div class="tag-row">
+                                    <span class="tag-label">Education:</span>
+                                    <span class="badge" id="live-result-edu">Master's</span>
+                                </div>
+                                <div class="tag-row">
+                                    <span class="tag-label">Status:</span>
+                                    <span class="badge" id="live-result-status">Shortlisted</span>
+                                </div>
+                            </div>
+                            <div class="action-footer">
+                                <button class="btn btn-primary btn-block" id="btn-view-live-result-details">
+                                    <i class="fa-solid fa-folder-open"></i> Open Detailed Candidate AI Report
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Recruitment Insights Section -->
+            <section id="analytics-section" class="content-section">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>Recruiter Insights (Analytics)</h2>
+                        <p class="subtitle">Visually review pipeline breakdowns, matched credentials, and skill trends.</p>
+                    </div>
+                </div>
+
+                <div class="two-column-layout">
+                    <!-- Selection distribution chart -->
+                    <div class="glass-panel">
+                        <h4>Selection Distributions</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="selection-distribution-chart"></canvas>
+                        </div>
+                    </div>
+                    <!-- Core Skills occurrence chart -->
+                    <div class="glass-panel">
+                        <h4>Extracted Skills Heatmap (Top Skills)</h4>
+                        <div class="chart-wrapper">
+                            <canvas id="skills-frequency-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===================== BATCH SCREENING SECTION ===================== -->
+            <section id="batch-section" class="content-section">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>Batch Resume Screening</h2>
+                        <p class="subtitle">Screen up to 20 resumes simultaneously against a single job requisition.</p>
+                    </div>
+                </div>
+                <div class="two-column-layout">
+                    <div class="glass-panel">
+                        <h4>Batch Configuration</h4>
+                        <form id="batch-form" class="form-container">
+                            <div class="form-group">
+                                <label for="batch-job-select">Target Requisition / Job</label>
+                                <select id="batch-job-select" required>
+                                    <option value="" disabled selected>Select Job Opening...</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Screening Engine</label>
+                                <div class="toggle-container">
+                                    <div class="engine-toggle-card active" id="batch-engine-offline" data-engine="offline">
+                                        <i class="fa-solid fa-database"></i>
+                                        <div class="toggle-text">
+                                            <p class="toggle-title">Offline Engine</p>
+                                            <span class="toggle-desc">Pure Java NLP matching</span>
+                                        </div>
+                                    </div>
+                                    <div class="engine-toggle-card" id="batch-engine-gemini" data-engine="gemini">
+                                        <i class="fa-solid fa-brain"></i>
+                                        <div class="toggle-text">
+                                            <p class="toggle-title">Gemini AI Model</p>
+                                            <span class="toggle-desc">Gen-AI details & feedback</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group hidden" id="batch-gemini-key-container">
+                                <label for="batch-api-key">Gemini API Key</label>
+                                <div class="password-wrapper">
+                                    <input type="password" id="batch-api-key" placeholder="Enter Gemini API key...">
+                                    <button type="button" class="toggle-password" id="btn-toggle-batch-key">
+                                        <i class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label>Upload Multiple Resumes (Max 20)</label>
+                                <div class="upload-zone" id="batch-drop-zone">
+                                    <i class="fa-solid fa-cloud-arrow-up cloud-icon"></i>
+                                    <p class="drag-title">Drag & Drop Multiple Resume Files</p>
+                                    <p class="drag-formats">PDF, DOCX, TXT, RTF — up to 20 files, 10MB each</p>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="btn-batch-browse">Browse Files</button>
+                                    <input type="file" id="batch-file-input" class="hidden" accept=".pdf,.docx,.txt,.doc,.rtf" multiple>
+                                </div>
+                                <div id="batch-file-list" class="batch-file-list"></div>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-run-batch" disabled>
+                                <i class="fa-solid fa-play"></i> Run Batch Screening
+                            </button>
+                        </form>
+                    </div>
+                    <div class="glass-panel">
+                        <div class="panel-header">
+                            <h4>Batch Results</h4>
+                            <span class="status-indicator idle" id="batch-status-badge">Idle</span>
+                        </div>
+                        <div id="batch-progress-container" class="hidden">
+                            <div class="batch-progress-bar-wrapper">
+                                <div class="batch-progress-bar" id="batch-progress-bar"></div>
+                            </div>
+                            <p class="batch-progress-label" id="batch-progress-label">Processing 0 / 0...</p>
+                        </div>
+                        <div id="batch-results-list" class="batch-results-list">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-layer-group"></i>
+                                <p>Upload multiple resumes and run batch screening to see ranked results here.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===================== COMPARE CANDIDATES SECTION ===================== -->
+            <section id="compare-section" class="content-section">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>Compare Candidates</h2>
+                        <p class="subtitle">Select 2–5 screened candidates and view them side-by-side for a data-driven hiring decision.</p>
+                    </div>
+                </div>
+                <div class="glass-panel" style="margin-bottom:24px;">
+                    <div class="compare-selector-row">
+                        <div class="form-group" style="flex:1;">
+                            <label>Select Candidates to Compare (pick 2–5 from screened results)</label>
+                            <div id="compare-checkbox-list" class="compare-checkbox-list">
+                                <p class="text-muted" style="font-size:12px;">No screened results yet. Screen some resumes first.</p>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" id="btn-run-compare" disabled>
+                            <i class="fa-solid fa-code-compare"></i> Compare Selected
+                        </button>
+                    </div>
+                </div>
+                <div id="compare-results-container" class="compare-results-container hidden"></div>
+            </section>
+
+            <!-- ===================== CAREER DNA SECTION ===================== -->
+            <section id="dna-section" class="content-section">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>Career DNA Fingerprints</h2>
+                        <p class="subtitle">Every screened candidate gets a unique 8-axis skill archetype profile — the visual fingerprint no other ATS provides.</p>
+                    </div>
+                </div>
+
+                <!-- Archetype trend bar -->
+                <div class="glass-panel" style="margin-bottom:24px;">
+                    <h4>Talent Pool Archetype Distribution</h4>
+                    <p class="subtitle" style="margin-bottom:16px;">What types of engineers have applied across all active roles?</p>
+                    <div class="chart-wrapper" style="height:200px;">
+                        <canvas id="dna-trends-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- DNA Cards Grid -->
+                <div class="dna-cards-grid" id="dna-cards-grid">
+                    <div class="empty-state-card">
+                        <i class="fa-solid fa-dna"></i>
+                        <p>No DNA profiles yet. Screen some candidates to generate their Career DNA fingerprints.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->            <section id="settings-section" class="content-section">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>Application Settings</h2>
+                        <p class="subtitle">Configure databases, set system credentials, and clean application states.</p>
+                    </div>
+                </div>
+
+                <div class="glass-panel max-width-medium">
+                    <h4>Database Configuration</h4>
+                    <p class="desc-text">By default, KIT AI uses a zero-setup **file-based H2 database** to run instantly. To switch to a production **MySQL database**, update your backend settings inside the `application-mysql.properties` file, and toggle below.</p>
+                    
+                    <div class="settings-form form-container">
+                        <div class="form-group">
+                            <label>Active Database Target</label>
+                            <div class="db-select-toggle">
+                                <div class="db-toggle-item active" id="db-toggle-h2">
+                                    <i class="fa-solid fa-file-shield"></i>
+                                    <div>
+                                        <p class="db-title">H2 Local Database</p>
+                                        <span>Standalone active, zero-config</span>
+                                    </div>
+                                </div>
+                                <div class="db-toggle-item" id="db-toggle-mysql">
+                                    <i class="fa-solid fa-server"></i>
+                                    <div>
+                                        <p class="db-title">MySQL Database</p>
+                                        <span>Production grade relational store</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>MySQL Active Settings (Read-Only Preview)</label>
+                            <div class="code-preview">
+                                <code>jdbc:mysql://localhost:3306/resume_screener_db?createDatabaseIfNotExist=true</code>
+                            </div>
+                            <p class="help-text"><i class="fa-solid fa-circle-info"></i> To activate MySQL, make sure to add `spring.profiles.active=mysql` in your `application.properties` configuration file.</p>
+                        </div>
+
+                        <hr class="divider">
+
+                        <h4>API Credentials Settings</h4>
+                        <div class="form-group">
+                            <label for="settings-api-key">Google Gemini API Key</label>
+                            <div class="password-wrapper">
+                                <input type="password" id="settings-api-key" placeholder="Enter Gemini API key for standard generative screening...">
+                                <button type="button" class="toggle-password" id="btn-toggle-settings-key-visibility">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                            </div>
+                            <p class="help-text">Set this key here to make it automatically default inside all screening configurations.</p>
+                        </div>
+
+                        <button type="button" class="btn btn-primary" id="btn-save-settings">
+                            <i class="fa-solid fa-circle-check"></i> Save Application Configurations
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals Layer -->
+
+    <!-- Create Requisition/Job Modal -->
+    <div class="modal-backdrop hidden" id="create-job-modal">
+        <div class="modal-card glassmorphic-modal">
+            <div class="modal-header">
+                <h3>New Job Requisition</h3>
+                <button class="btn-close-modal" id="btn-close-job-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="create-job-form" class="form-container">
+                <div class="form-group">
+                    <label for="job-title">Job Title</label>
+                    <input type="text" id="job-title" placeholder="e.g., Senior Full-Stack Engineer" required>
+                </div>
+                <div class="form-group">
+                    <label for="job-dept">Department</label>
+                    <input type="text" id="job-dept" placeholder="e.g., Software Engineering" required>
+                </div>
+                <div class="form-group">
+                    <label for="job-skills">Required Skills (Comma separated)</label>
+                    <input type="text" id="job-skills" placeholder="e.g., Java, Spring Boot, MySQL, React" required>
+                    <p class="help-text">Separate skills with commas so the algorithm can index them perfectly.</p>
+                </div>
+                <div class="form-group">
+                    <label for="job-preferred-skills">Preferred / Bonus Skills <span style="color:var(--text-muted);font-weight:400;">(optional)</span></label>
+                    <input type="text" id="job-preferred-skills" placeholder="e.g., Kubernetes, Redis, Figma">
+                    <p class="preferred-skills-hint"><i class="fa-solid fa-circle-plus"></i> Matching these adds up to 10 bonus points to the candidate score.</p>
+                </div>
+                <div class="form-row-two">
+                    <div class="form-group">
+                        <label for="job-experience">Min Experience (Years)</label>
+                        <input type="number" id="job-experience" min="0" max="30" value="3" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="job-education">Min Education Requirement</label>
+                        <select id="job-education" required>
+                            <option value="Any">Any / Not Critical</option>
+                            <option value="Diploma">Diploma</option>
+                            <option value="Bachelor's Degree" selected>Bachelor's Degree</option>
+                            <option value="Master's Degree">Master's Degree</option>
+                            <option value="PhD">PhD</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="job-desc">Job Description / Responsibilities</label>
+                    <textarea id="job-desc" rows="4" placeholder="Detail the day-to-day responsibilities, expectations, and role scopes..." required></textarea>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btn-cancel-job-modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Requisition</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Candidate Detailed AI Evaluation Report Modal -->
+    <div class="modal-backdrop hidden" id="candidate-detail-modal">
+        <div class="modal-card glassmorphic-modal modal-large">
+            <div class="modal-header">
+                <h3>Candidate Detailed AI Evaluation Report</h3>
+                <button class="btn-close-modal" id="btn-close-candidate-modal"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div class="candidate-detail-layout">
+                <!-- Left Sidebar Details -->
+                <div class="candidate-side-panel">
+                    <div class="candidate-avatar-wrapper">
+                        <div class="avatar-lg" id="detail-candidate-avatar">JD</div>
+                        <h4 id="detail-candidate-name">Jane Doe</h4>
+                        <span class="badge" id="detail-candidate-badge-status">Shortlisted</span>
+                    </div>
+
+                    <div class="candidate-details-meta">
+                        <div class="meta-item">
+                            <span class="meta-label">Email</span>
+                            <span class="meta-val" id="detail-candidate-email">jane@example.com</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Phone</span>
+                            <span class="meta-val" id="detail-candidate-phone">+1-234-567-8901</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Total Exp Years</span>
+                            <span class="meta-val" id="detail-candidate-exp">5 Years</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Education</span>
+                            <span class="meta-val" id="detail-candidate-edu">M.S. in Computer Science</span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Screening Method</span>
+                            <span class="meta-val highlight" id="detail-candidate-engine">Gemini AI Model</span>
+                        </div>
+                    </div>
+
+                    <div class="candidate-status-editor">
+                        <label for="detail-status-select">Modify Recruitment Status</label>
+                        <select id="detail-status-select">
+                            <option value="Shortlisted">Shortlisted</option>
+                            <option value="Under Review">Under Review</option>
+                            <option value="Rejected">Rejected</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Right Core Contents -->
+                <div class="candidate-main-panel">
+                    <!-- Header metrics -->
+                    <div class="match-heading-card">
+                        <div class="match-radial">
+                            <div class="radial-ring" id="detail-candidate-score-radial" style="--radial-percent: 85%;">
+                                <div class="radial-center" id="detail-candidate-score-text">85%</div>
+                            </div>
+                        </div>
+                        <div class="match-heading-text">
+                            <h5>Overall Requirement Fit</h5>
+                            <p>Calculated dynamic weight matching for target requisition: <strong id="detail-candidate-job-target">Senior Java Developer</strong></p>
+                        </div>
+                    </div>
+
+                    <!-- Tabs/Accordions -->
+                    <div class="report-content-sections">
+                        <!-- AI parsed Summary -->
+                        <div class="report-block">
+                            <h5><i class="fa-solid fa-align-left icon-accent"></i> Candidate Fit Summary</h5>
+                            <p class="summary-paragraph" id="detail-candidate-summary">Jane is an experienced software engineer with a strong track record of building production systems in Java. Her profile perfectly matches the core skills required...</p>
+                        </div>
+
+                        <!-- Skills matched tags -->
+                        <div class="report-block">
+                            <h5><i class="fa-solid fa-tags icon-accent"></i> Extracted Candidate Skills</h5>
+                            <div class="skills-tag-container" id="detail-candidate-skills-tags">
+                                <span class="skill-tag">Java</span>
+                                <span class="skill-tag">Spring Boot</span>
+                                <span class="skill-tag">MySQL</span>
+                            </div>
+                        </div>
+
+                        <!-- Strengths & Weaknesses checklists -->
+                        <div class="report-block-grid">
+                            <div class="report-block border-green">
+                                <h5 class="color-green"><i class="fa-solid fa-circle-check"></i> Highlighted Strengths</h5>
+                                <ul class="checklist-ul green-check" id="detail-candidate-strengths-ul">
+                                    <li>Proven experience in backend architectures</li>
+                                    <li>Excellent match of Java skills</li>
+                                </ul>
+                            </div>
+                            <div class="report-block border-orange">
+                                <h5 class="color-orange"><i class="fa-solid fa-triangle-exclamation"></i> Gaps & Limitations</h5>
+                                <ul class="checklist-ul orange-check" id="detail-candidate-weaknesses-ul">
+                                    <li>No React experience listed</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Suggested Interview questions -->
+                        <div class="report-block">
+                            <h5><i class="fa-solid fa-clipboard-question icon-accent"></i> Tailored Technical Interview Prompt</h5>
+                            <div class="interview-questions-box" id="detail-candidate-questions-container">
+                                <p>1. How do you design multi-tenant systems in Spring Boot?</p>
+                            </div>
+                        </div>
+
+                        <!-- Recruiter Notes -->
+                        <div class="report-block notes-block">
+                            <h5><i class="fa-solid fa-note-sticky icon-accent"></i> Recruiter Notes</h5>
+                            <textarea class="notes-textarea" id="detail-recruiter-notes" placeholder="Add private notes about this candidate — interview impressions, follow-up actions, cultural fit..."></textarea>
+                            <div class="notes-save-row">
+                                <span class="notes-saved-indicator" id="notes-saved-indicator"><i class="fa-solid fa-circle-check"></i> Saved</span>
+                                <button class="btn btn-secondary btn-sm" id="btn-save-notes"><i class="fa-solid fa-floppy-disk"></i> Save Notes</button>
+                            </div>
+                        </div>
+
+                        <!-- Career DNA Radar -->
+                        <div class="report-block" id="detail-dna-block">                            <h5><i class="fa-solid fa-dna icon-accent"></i> Career DNA Fingerprint</h5>
+                            <div class="dna-radar-wrapper">
+                                <canvas id="detail-dna-radar-chart" width="300" height="300"></canvas>
+                                <div class="dna-meta-panel">
+                                    <div class="dna-dominant-badge" id="detail-dna-dominant-badge">
+                                        <span class="dna-badge-label">Primary Archetype</span>
+                                        <span class="dna-badge-value" id="detail-dna-dominant">—</span>
+                                    </div>
+                                    <div class="dna-dominant-badge dna-secondary" id="detail-dna-secondary-badge">
+                                        <span class="dna-badge-label">Secondary Archetype</span>
+                                        <span class="dna-badge-value" id="detail-dna-secondary">—</span>
+                                    </div>
+                                    <div class="dna-strength-bar-wrapper">
+                                        <span class="dna-badge-label">Overall DNA Strength</span>
+                                        <div class="dna-strength-track">
+                                            <div class="dna-strength-fill" id="detail-dna-strength-fill"></div>
+                                        </div>
+                                        <span class="dna-strength-pct" id="detail-dna-strength-pct">0%</span>
+                                    </div>
+                                    <p class="dna-archetype-desc" id="detail-dna-desc">—</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="modal-footer-extended">
+                <div class="rescreen-row">
+                    <i class="fa-solid fa-rotate" style="color:var(--accent-teal);font-size:13px;"></i>
+                    <select id="rescreen-job-select" title="Select a job to re-screen this candidate against">
+                        <option value="" disabled selected>Re-screen against job...</option>
+                    </select>
+                    <button class="btn btn-secondary btn-sm" id="btn-rescreen-candidate">
+                        <i class="fa-solid fa-rotate"></i> Re-Screen
+                    </button>
+                </div>
+                <button class="btn btn-secondary" id="btn-close-candidate-modal-footer">Close Evaluation</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Overlay -->
+    <div class="login-backdrop" id="login-screen">
+        <div class="login-card glass-panel">
+            <div class="login-header">
+                <i class="fa-solid fa-wand-magic-sparkles login-logo"></i>
+                <h2>KIT AI</h2>
+                <p>Sign in to your Recruiter Account</p>
+            </div>
+            <form id="login-form" class="form-container">
+                <div class="form-group">
+                    <label for="login-username">Username</label>
+                    <input type="text" id="login-username" placeholder="Enter username" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Password</label>
+                    <input type="password" id="login-password" placeholder="Enter password" required autocomplete="current-password">
+                </div>
+                <div id="login-error-message" class="error-msg hidden">Invalid username or password</div>
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-login">
+                    <i class="fa-solid fa-right-to-bracket"></i> Sign In
+                </button>
+                <div class="login-credentials-hint">
+                    <strong>Default credentials:</strong> username <strong>admin</strong> / password <strong>admin123</strong>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container"></div>
+
+    <!-- Chart JS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart.js Radar plugin is included in Chart.js core -->
+    <!-- Core Application Logic -->
+    <script src="app.js?v=2.1.0"></script>
+</body>
+</html>

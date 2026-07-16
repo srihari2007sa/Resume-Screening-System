@@ -1,0 +1,36 @@
+# Maven
+target/
+*.class
+*.jar
+*.war
+
+# Local Maven installation — don't commit the bundled maven folder
+maven/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Local database files — never commit these
+data/
+*.mv.db
+*.trace.db
+
+# Environment / secrets — NEVER commit these
+.env
+*.env
+application-local.properties
+
+# OS
+.DS_Store
+Thumbs.db
+
+# PPT and HTML diagrams (optional — remove these lines if you want them in git)
+*.pptx
+ER-Diagram.html
+ER-Diagram-Chen.html
