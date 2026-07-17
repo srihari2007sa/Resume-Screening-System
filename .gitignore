@@ -30,7 +30,6 @@ application-local.properties
 .DS_Store
 Thumbs.db
 
-# PPT and HTML diagrams (optional — remove these lines if you want them in git)
-*.pptx
+# PPT and HTML diagrams
 ER-Diagram.html
 ER-Diagram-Chen.html
