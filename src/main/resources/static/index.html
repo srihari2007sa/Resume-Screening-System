@@ -54,6 +54,10 @@
                     <i class="fa-solid fa-dna"></i>
                     <span>Career DNA</span>
                 </a>
+                <a href="#coach" class="nav-item" data-target="coach-section">
+                    <i class="fa-solid fa-robot"></i>
+                    <span>AI Resume Coach</span>
+                </a>
                 <a href="#settings" class="nav-item" data-target="settings-section">
                     <i class="fa-solid fa-sliders"></i>
                     <span>Settings</span>
@@ -484,6 +488,89 @@
                     <div class="empty-state-card">
                         <i class="fa-solid fa-dna"></i>
                         <p>No DNA profiles yet. Screen some candidates to generate their Career DNA fingerprints.</p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===================== AI RESUME COACH SECTION ===================== -->
+            <section id="coach-section" class="content-section">
+                <div class="section-title-wrapper">
+                    <div>
+                        <h2>AI Resume Coach</h2>
+                        <p class="subtitle">Have a real-time conversation with Gemini AI about any screened candidate — get personalised improvement tips, cover letter drafts, and gap analysis instantly.</p>
+                    </div>
+                    <div class="coach-novelty-badge">
+                        <i class="fa-solid fa-star"></i> Novelty Feature
+                    </div>
+                </div>
+
+                <div class="coach-layout">
+                    <!-- Left: Select a screening result to coach -->
+                    <div class="glass-panel coach-sidebar">
+                        <h4><i class="fa-solid fa-robot" style="color:var(--accent-purple);margin-right:8px;"></i>Select Candidate to Coach</h4>
+                        <p class="subtitle" style="margin-bottom:16px;">Choose a screened candidate. The AI will know their full resume, skills, and job match details.</p>
+                        <div class="form-group">
+                            <label for="coach-result-select">Screened Candidate</label>
+                            <select id="coach-result-select">
+                                <option value="" disabled selected>Select a screening result...</option>
+                            </select>
+                        </div>
+                        <div id="coach-candidate-card" class="coach-candidate-card hidden">
+                            <div class="coach-card-avatar" id="coach-card-avatar">SH</div>
+                            <div class="coach-card-info">
+                                <div class="coach-card-name" id="coach-card-name">Sri Hari</div>
+                                <div class="coach-card-job" id="coach-card-job">Software Engineer</div>
+                                <div class="coach-card-score" id="coach-card-score">85% Match</div>
+                            </div>
+                        </div>
+                        <hr class="divider" style="margin:16px 0;">
+                        <h4 style="margin-bottom:10px;">Quick Prompts</h4>
+                        <div class="coach-quick-prompts" id="coach-quick-prompts">
+                            <button class="coach-prompt-btn" data-prompt="How can this candidate improve their resume to get shortlisted for this role?">💡 Improve Resume</button>
+                            <button class="coach-prompt-btn" data-prompt="What specific skills should this candidate learn to be a stronger fit for this job?">📚 Skill Gaps</button>
+                            <button class="coach-prompt-btn" data-prompt="Write a professional cover letter for this candidate for this job.">✉️ Cover Letter</button>
+                            <button class="coach-prompt-btn" data-prompt="What projects should this candidate add to their portfolio to get shortlisted?">🛠️ Portfolio Advice</button>
+                            <button class="coach-prompt-btn" data-prompt="Give a detailed analysis of the candidate's strengths and weaknesses for this role.">🔍 Full Analysis</button>
+                            <button class="coach-prompt-btn" data-prompt="What salary range should this candidate expect for this role given their profile?">💰 Salary Estimate</button>
+                        </div>
+                    </div>
+
+                    <!-- Right: Chat window -->
+                    <div class="glass-panel coach-chat-panel">
+                        <div class="coach-chat-header">
+                            <div class="coach-chat-title">
+                                <i class="fa-solid fa-comments"></i>
+                                <span id="coach-chat-title-text">AI Resume Coach</span>
+                            </div>
+                            <div class="coach-chat-actions">
+                                <button class="btn btn-secondary btn-sm" id="btn-clear-coach-chat">
+                                    <i class="fa-solid fa-trash"></i> Clear Chat
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="coach-messages" id="coach-messages">
+                            <div class="coach-welcome-msg">
+                                <div class="coach-bot-avatar"><i class="fa-solid fa-robot"></i></div>
+                                <div class="coach-bubble coach-bubble-bot">
+                                    <p>👋 Hi! I'm your <strong>AI Resume Coach</strong>.</p>
+                                    <p style="margin-top:6px;">Select a screened candidate on the left and ask me anything — I'll give you personalised advice based on their actual resume and the target job requirements.</p>
+                                    <p style="margin-top:6px;font-size:11px;opacity:.7;">Powered by Google Gemini AI · Context-aware · Multi-turn conversation</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="coach-input-row">
+                            <textarea id="coach-input" class="coach-input" rows="2"
+                                placeholder="Ask anything about this candidate... e.g. 'How can they improve their resume?'"
+                                disabled></textarea>
+                            <button class="btn btn-primary coach-send-btn" id="btn-coach-send" disabled>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <p class="help-text" style="margin-top:6px;text-align:center;">
+                            <i class="fa-solid fa-circle-info"></i> Requires Gemini API key in Settings &nbsp;·&nbsp; <kbd>Shift+Enter</kbd> for new line &nbsp;·&nbsp; <kbd>Enter</kbd> to send
+                        </p>
                     </div>
                 </div>
             </section>

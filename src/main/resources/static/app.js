@@ -1318,3 +1318,286 @@ function initKeyboardShortcuts() {
         }
     });
 }
+
+/* -------------------------------------------------------
+   AI RESUME COACH — Novelty Feature
+   Multi-turn Gemini AI conversation grounded in a
+   specific candidate's resume + job description.
+   No other ATS ships this feature.
+------------------------------------------------------- */
+
+let coachState = {
+    selectedResultId: null,
+    chatHistory: [],        // [{role:'user'|'model', text:'...'}]
+    isTyping: false
+};
+
+function initCoachSection() {
+    // Populate the result dropdown
+    const select = document.getElementById('coach-result-select');
+    if (!select) return;
+    select.innerHTML = '<option value="" disabled selected>Select a screening result...</option>';
+
+    const sorted = [...state.screenings].sort((a,b) => new Date(b.screenedAt) - new Date(a.screenedAt));
+    sorted.forEach(item => {
+        const o = document.createElement('option');
+        o.value = item.id;
+        o.textContent = `${item.candidate.name} → ${item.jobDescription.title} (${Math.round(item.matchScore)}%)`;
+        select.appendChild(o);
+    });
+
+    // Restore selection if still valid
+    if (coachState.selectedResultId && sorted.some(s => s.id == coachState.selectedResultId)) {
+        select.value = coachState.selectedResultId;
+        updateCoachCandidateCard(coachState.selectedResultId);
+        document.getElementById('coach-input').disabled = false;
+        document.getElementById('btn-coach-send').disabled = false;
+    }
+}
+
+function updateCoachCandidateCard(resultId) {
+    const item = state.screenings.find(s => s.id == resultId);
+    if (!item) return;
+
+    const card = document.getElementById('coach-candidate-card');
+    const initials = item.candidate.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
+    document.getElementById('coach-card-avatar').textContent = initials;
+    document.getElementById('coach-card-name').textContent = item.candidate.name;
+    document.getElementById('coach-card-job').textContent = item.jobDescription.title;
+
+    const score = Math.round(item.matchScore);
+    const scoreEl = document.getElementById('coach-card-score');
+    scoreEl.textContent = `${score}% Match · ${item.matchStatus}`;
+    scoreEl.style.color = score >= 75 ? 'var(--accent-emerald)' : score >= 50 ? 'var(--accent-orange)' : 'var(--accent-red)';
+
+    card.classList.remove('hidden');
+
+    // Update chat title
+    const titleEl = document.getElementById('coach-chat-title-text');
+    if (titleEl) titleEl.textContent = `AI Coach — ${item.candidate.name}`;
+}
+
+function registerCoachListeners() {
+    const select = document.getElementById('coach-result-select');
+    const input  = document.getElementById('coach-input');
+    const sendBtn = document.getElementById('btn-coach-send');
+    const clearBtn = document.getElementById('btn-clear-coach-chat');
+
+    if (!select) return;
+
+    // Select a candidate
+    select.addEventListener('change', () => {
+        coachState.selectedResultId = parseInt(select.value);
+        coachState.chatHistory = [];
+        updateCoachCandidateCard(coachState.selectedResultId);
+        input.disabled = false;
+        sendBtn.disabled = false;
+        input.focus();
+
+        // Show greeting specific to this candidate
+        const item = state.screenings.find(s => s.id == coachState.selectedResultId);
+        if (item) {
+            clearCoachMessages();
+            appendCoachBotMessage(
+                `Great! I'm now your AI coach for **${item.candidate.name}** applying to **${item.jobDescription.title}**.\n\n` +
+                `They scored **${Math.round(item.matchScore)}%** — status: **${item.matchStatus}**.\n\n` +
+                `I have full context of their resume, skills, and job requirements. Ask me anything! 💬\n\n` +
+                `Or use a quick prompt on the left to get started instantly.`
+            );
+        }
+    });
+
+    // Send on Enter (Shift+Enter for newline)
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (!sendBtn.disabled) sendCoachMessage();
+        }
+    });
+
+    sendBtn.addEventListener('click', sendCoachMessage);
+
+    clearBtn.addEventListener('click', () => {
+        coachState.chatHistory = [];
+        clearCoachMessages();
+        appendCoachBotMessage('Chat cleared! Ask me anything about this candidate. 🗑️');
+        toast('Coach chat cleared.', 'info');
+    });
+
+    // Quick prompt buttons
+    document.getElementById('coach-quick-prompts').addEventListener('click', (e) => {
+        const btn = e.target.closest('.coach-prompt-btn');
+        if (!btn) return;
+        if (!coachState.selectedResultId) {
+            toast('Please select a candidate first.', 'warning');
+            return;
+        }
+        const prompt = btn.getAttribute('data-prompt');
+        input.value = prompt;
+        input.focus();
+        sendCoachMessage();
+    });
+}
+
+async function sendCoachMessage() {
+    const input   = document.getElementById('coach-input');
+    const sendBtn = document.getElementById('btn-coach-send');
+    const message = input.value.trim();
+
+    if (!message || !coachState.selectedResultId || coachState.isTyping) return;
+
+    // Append user message to UI
+    appendCoachUserMessage(message);
+    coachState.chatHistory.push({ role: 'user', text: message });
+    input.value = '';
+    input.style.height = 'auto';
+
+    // Show typing indicator
+    coachState.isTyping = true;
+    sendBtn.disabled = true;
+    const typingId = showCoachTyping();
+
+    const apiKey = localStorage.getItem('kit_ai_gemini_key') || '';
+    const headers = { 'Content-Type': 'application/json' };
+    if (apiKey) headers['X-Gemini-Key'] = apiKey;
+
+    try {
+        const response = await fetch(`${API_BASE}/api/coach/chat`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({
+                resultId: coachState.selectedResultId,
+                message: message,
+                history: coachState.chatHistory.slice(0, -1) // exclude current message (already sent)
+            })
+        });
+
+        removeCoachTyping(typingId);
+
+        if (!response.ok) {
+            const err = await response.text();
+            appendCoachBotMessage(`❌ Error: ${err}`);
+            return;
+        }
+
+        const data = await response.json();
+        const reply = data.reply || 'No response received.';
+
+        // Add model reply to history
+        coachState.chatHistory.push({ role: 'model', text: reply });
+
+        // Render with basic markdown
+        appendCoachBotMessage(reply);
+
+    } catch (err) {
+        removeCoachTyping(typingId);
+        appendCoachBotMessage(`❌ Network error: ${err.message}. Please check your connection.`);
+    } finally {
+        coachState.isTyping = false;
+        sendBtn.disabled = false;
+        input.focus();
+    }
+}
+
+/* ── UI Helpers ── */
+
+function clearCoachMessages() {
+    const container = document.getElementById('coach-messages');
+    container.innerHTML = '';
+}
+
+function appendCoachUserMessage(text) {
+    const container = document.getElementById('coach-messages');
+    const row = document.createElement('div');
+    row.className = 'coach-msg-row user-row';
+    row.innerHTML = `
+        <div class="coach-user-avatar">You</div>
+        <div class="coach-bubble coach-bubble-user">${escapeHtml(text)}</div>`;
+    container.appendChild(row);
+    scrollCoachToBottom();
+}
+
+function appendCoachBotMessage(text) {
+    const container = document.getElementById('coach-messages');
+    const row = document.createElement('div');
+    row.className = 'coach-msg-row';
+    row.innerHTML = `
+        <div class="coach-bot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="coach-bubble coach-bubble-bot">${renderCoachMarkdown(text)}</div>`;
+    container.appendChild(row);
+    scrollCoachToBottom();
+}
+
+function showCoachTyping() {
+    const container = document.getElementById('coach-messages');
+    const row = document.createElement('div');
+    const id = 'typing-' + Date.now();
+    row.id = id;
+    row.className = 'coach-msg-row';
+    row.innerHTML = `
+        <div class="coach-bot-avatar"><i class="fa-solid fa-robot"></i></div>
+        <div class="coach-typing">
+            <span>AI is thinking</span>
+            <div class="coach-typing-dots">
+                <span></span><span></span><span></span>
+            </div>
+        </div>`;
+    container.appendChild(row);
+    scrollCoachToBottom();
+    return id;
+}
+
+function removeCoachTyping(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+}
+
+function scrollCoachToBottom() {
+    const container = document.getElementById('coach-messages');
+    if (container) container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+    return text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/**
+ * Very lightweight markdown renderer for chat bubbles.
+ * Handles: **bold**, *italic*, `code`, bullet lists, numbered lists, line breaks.
+ */
+function renderCoachMarkdown(text) {
+    let html = escapeHtml(text);
+    // Bold **text**
+    html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    // Italic *text*
+    html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    // Inline code `code`
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    // Bullet list lines starting with - or •
+    html = html.replace(/^[\-•]\s+(.+)$/gm, '<li>$1</li>');
+    // Numbered list
+    html = html.replace(/^\d+\.\s+(.+)$/gm, '<li>$1</li>');
+    // Wrap consecutive <li> in <ul>
+    html = html.replace(/(<li>.*<\/li>)/gs, (match) => '<ul>' + match + '</ul>');
+    // Double newline = paragraph break
+    html = html.replace(/\n\n/g, '</p><p>');
+    // Single newline = <br>
+    html = html.replace(/\n/g, '<br>');
+    // Wrap in paragraph
+    html = '<p>' + html + '</p>';
+    return html;
+}
+
+// Wire into SPA navigation
+const _origInitSPA = initSPA;
+document.addEventListener('DOMContentLoaded', () => {
+    // Patch SPA nav to also trigger coach init
+    const coachNavItem = document.querySelector('.nav-item[href="#coach"]');
+    if (coachNavItem) {
+        coachNavItem.addEventListener('click', () => {
+            initCoachSection();
+        });
+    }
+    // Register coach event listeners once
+    registerCoachListeners();
+});

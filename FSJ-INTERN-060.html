@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>FSJ-INTERN-060 – AI-Based Resume Screening System</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;font-size:8.8pt;background:#d8dde6;color:#111}
+#print-btn{display:block;margin:10px auto;padding:7px 24px;background:#1565c0;color:#fff;
+  border:none;border-radius:4px;font-size:12px;cursor:pointer;font-family:Arial,sans-serif}
+#print-btn:hover{background:#0d47a1}
+.page{width:794px;height:1123px;background:#fff;margin:10px auto 20px;
+  padding:16px 26px 12px;box-shadow:0 2px 18px rgba(0,0,0,.2);overflow:hidden}
+.header{text-align:center;border-bottom:2px solid #1565c0;padding-bottom:5px;margin-bottom:7px}
+.hid{font-size:9.5pt;font-weight:bold;color:#1565c0;letter-spacing:1px}
+.htitle{font-size:13.5pt;font-weight:bold;color:#111;line-height:1.2}
+.meta-table{width:100%;border-collapse:collapse;margin-bottom:7px}
+.meta-table th{background:#1565c0;color:#fff;font-weight:bold;text-align:center;
+  padding:3px 7px;border:1px solid #1565c0;font-size:7.8pt;text-transform:uppercase}
+.meta-table td{border:1px solid #90a4ae;padding:3px 7px;vertical-align:top;
+  text-align:center;font-size:7.8pt;line-height:1.4;color:#222}
+.meta-table td:first-child{font-weight:bold;color:#1565c0;font-size:8.5pt;white-space:nowrap}
+.meta-table td:nth-child(2){font-weight:600}
+.meta-table td:nth-child(3){text-align:left}
+.sh{font-size:8.2pt;font-weight:bold;color:#1565c0;border-bottom:1.5px solid #1565c0;
+  padding-bottom:2px;margin:6px 0 3px;text-transform:uppercase;letter-spacing:.3px}
+.sb{font-size:7.8pt;color:#222;line-height:1.5;margin-bottom:2px}
+.two-col{display:flex;gap:14px;margin-bottom:2px}
+.col{flex:1}
+.col-h{font-size:7.8pt;font-weight:bold;color:#1565c0;border-bottom:1px solid #90caf9;
+  padding-bottom:1px;margin-bottom:2px}
+ul.sl{list-style:none;padding:0;margin:0}
+ul.sl li{font-size:7.5pt;color:#222;padding:1px 0 1px 11px;position:relative;line-height:1.4}
+ul.sl li::before{content:"▸";position:absolute;left:0;color:#1565c0;font-size:7.5pt;top:1px}
+ul.sl li strong{color:#111}
+ol.fl{list-style:none;padding:0;margin:0;counter-reset:fc;
+  display:grid;grid-template-columns:1fr 1fr;gap:0px 14px}
+ol.fl li{font-size:7.5pt;color:#222;padding:1px 0 1px 14px;position:relative;
+  line-height:1.4;counter-increment:fc}
+ol.fl li::before{content:counter(fc)".";position:absolute;left:0;color:#1565c0;
+  font-weight:bold;font-size:7.5pt;width:12px}
+.ai-tags{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0}
+.ai-tag{background:#e3f2fd;border:1px solid #90caf9;border-radius:3px;
+  padding:1px 7px;font-size:7.3pt;color:#1565c0;font-weight:600}
+/* NOVELTY BOX */
+.novelty-box{background:linear-gradient(135deg,#fffde7,#fff8e1);border:1.5px solid #f9a825;
+  border-radius:5px;padding:6px 10px;margin:6px 0 3px}
+.novelty-title{font-size:8.5pt;font-weight:bold;color:#e65100;margin-bottom:3px;
+  display:flex;align-items:center;gap:6px}
+.novelty-badge{background:#f9a825;color:#fff;font-size:7pt;font-weight:700;
+  padding:1px 7px;border-radius:10px;letter-spacing:.5px}
+.novelty-body{font-size:7.5pt;color:#333;line-height:1.5}
+.novelty-body strong{color:#e65100}
+ul.nsl{list-style:none;padding:0;margin:3px 0 0 0;display:grid;grid-template-columns:1fr 1fr;gap:1px 12px}
+ul.nsl li{font-size:7.3pt;color:#444;padding:1px 0 1px 11px;position:relative;line-height:1.4}
+ul.nsl li::before{content:"★";position:absolute;left:0;color:#f9a825;font-size:7pt;top:1px}
+.footer{border-top:1.5px solid #1565c0;padding-top:4px;margin-top:6px;
+  display:flex;justify-content:space-between;font-size:7.3pt;color:#555}
+.footer span{font-weight:bold;color:#1565c0}
+@media print{
+  body{background:#fff}
+  #print-btn{display:none!important}
+  .page{margin:0;padding:10px 18px;box-shadow:none;width:100%;height:auto}
+}
+@page{size:A4;margin:7mm 9mm}
+</style>
+</head>
+<body>
+
+<button id="print-btn" onclick="window.print()">🖨 Print / Save as PDF</button>
+
+<div class="page">
+
+  <div class="header">
+    <div class="hid">FSJ-INTERN-060</div>
+    <div class="htitle">AI-Based Resume Screening &amp; Intelligent Candidate Evaluation System</div>
+  </div>
+
+  <table class="meta-table">
+    <thead><tr><th>PROJECT ID</th><th>DOMAIN</th><th>AI FEATURES</th></tr></thead>
+    <tbody><tr>
+      <td>FSJ-INTERN-060</td>
+      <td>Human Resources &amp;<br>Talent Acquisition</td>
+      <td>AI-Powered Resume Screening · Career DNA Fingerprint Profiling · Gemini AI Semantic Evaluation ·
+          Intelligent Skill Matching &amp; Gap Analysis · <strong>AI Resume Coach (Novelty)</strong> ·
+          AI-Generated Interview Questions &amp; Candidate Reports</td>
+    </tr></tbody>
+  </table>
+
+  <!-- PROJECT IDEA -->
+  <div class="sh">Project Idea &amp; Concept</div>
+  <p class="sb"><strong>KIT AI: AI-Based Resume Screening System</strong> is an intelligent platform for automated
+  candidate evaluation and talent acquisition. It automates resume parsing, skill extraction, candidate scoring, and
+  shortlisting using AI. The system performs Gemini AI-powered semantic evaluation and Career DNA fingerprint profiling
+  for enhanced hiring accuracy. Real-time analytics and batch screening improve recruiter efficiency and reduce manual
+  effort. KIT AI provides a centralized, secure, and intelligent solution for modern HR teams.</p>
+  <div class="ai-tags">
+    <span class="ai-tag">Gemini AI</span>
+    <span class="ai-tag">Career DNA Profiling</span>
+    <span class="ai-tag">TF-IDF / Cosine Similarity</span>
+    <span class="ai-tag">Skill Taxonomy Matching</span>
+    <span class="ai-tag">Batch Screening</span>
+    <span class="ai-tag">Radar Chart Visualization</span>
+    <span class="ai-tag" style="background:#fff8e1;border-color:#f9a825;color:#e65100;">★ AI Resume Coach</span>
+  </div>
+
+  <!-- KEY MODULES + TOOLS -->
+  <div class="sh">Key Modules &amp; Recommended Libraries / Tools</div>
+  <div class="two-col">
+    <div class="col">
+      <div class="col-h">Key Modules</div>
+      <ul class="sl">
+        <li>User Authentication &amp; Role Management</li>
+        <li>Job Requisition Management</li>
+        <li>Resume Parsing &amp; Upload (PDF, DOCX, TXT, RTF)</li>
+        <li>AI &amp; Offline Dual Screening Engine</li>
+        <li>Career DNA Fingerprint Profiling</li>
+        <li>Batch Resume Screening (up to 20 files)</li>
+        <li>Candidate Comparison (2–5 side by side)</li>
+        <li>Recruiter Notes &amp; Annotations</li>
+        <li>Recruitment Insights &amp; Analytics Dashboard</li>
+        <li><strong>★ AI Resume Coach (Novelty Feature)</strong></li>
+      </ul>
+    </div>
+    <div class="col">
+      <div class="col-h">Recommended Libraries &amp; Tools</div>
+      <ul class="sl">
+        <li><strong>Backend</strong> – Spring Boot 3.2.5, Spring Data JPA, Hibernate, Maven, Java 21</li>
+        <li><strong>Frontend</strong> – Vanilla JS SPA, Chart.js, Font Awesome</li>
+        <li><strong>Database</strong> – MySQL (Production), H2 (Development)</li>
+        <li><strong>AI</strong> – Google Gemini 3.5 Flash API, Offline NLP Engine</li>
+        <li><strong>Resume Parsing</strong> – Apache Tika 2.9.1</li>
+        <li><strong>Visualization</strong> – Chart.js, Radar Charts</li>
+        <li><strong>Analytics</strong> – Custom Career DNA Archetype Engine</li>
+        <li><strong>Deployment</strong> – Docker, Railway Cloud, GitHub CI/CD</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- NOVELTY FEATURE BOX -->
+  <div class="novelty-box">
+    <div class="novelty-title">
+      ★ NOVELTY FEATURE — AI Resume Coach (Conversational Candidate Intelligence)
+      <span class="novelty-badge">UNIQUE</span>
+    </div>
+    <p class="novelty-body">
+      <strong>What no existing ATS has:</strong> Every other ATS produces a static one-shot report. KIT AI introduces
+      an <strong>AI Resume Coach</strong> — a real-time, multi-turn conversational chatbot powered by Gemini AI that is
+      fully grounded in a specific candidate's resume AND target job description. Recruiters can have a live dialogue
+      to get actionable, personalised coaching advice. Backed by <code>POST /api/coach/chat</code> with full
+      conversation history support.
+    </p>
+    <ul class="nsl">
+      <li>Ask: "How can this candidate improve their resume?"</li>
+      <li>Ask: "Write a cover letter for this candidate."</li>
+      <li>Ask: "What skills should they learn to get shortlisted?"</li>
+      <li>Ask: "What salary range should they expect?"</li>
+      <li>Ask: "Compare skill gaps with job requirements."</li>
+      <li>Ask: "What portfolio projects should they add?"</li>
+    </ul>
+  </div>
+
+  <!-- AI / ML FEATURES -->
+  <div class="sh">AI / ML Feature Details</div>
+  <p class="sb">The system integrates <strong>Google Gemini 3.5 Flash API</strong> for semantic resume evaluation,
+  structured AI report generation, and the novel <strong>AI Resume Coach</strong> conversational interface. The
+  <strong>offline NLP engine</strong> uses TF-IDF cosine similarity, skill taxonomy matching, and weighted scoring
+  (Skills 40%, Semantic 30%, Experience 20%, Education 10%). The <strong>Career DNA Fingerprint</strong> classifies
+  candidates into 8 archetypes — Backend Architect, Frontend Craftsman, Data &amp; ML Engineer, Cloud &amp; DevOps,
+  Database Specialist, Security Engineer, Technical Leader, Mobile Developer — with radar chart visualization.
+  Batch screening processes up to 20 resumes simultaneously.</p>
+
+  <!-- IMPLEMENTATION FLOW -->
+  <div class="sh">Implementation Flow</div>
+  <ol class="fl">
+    <li>Admin manages job requisitions, screening configurations, and system settings.</li>
+    <li>Recruiter uploads single or batch resumes against a target job requisition.</li>
+    <li>Apache Tika parser extracts raw text from all supported resume formats.</li>
+    <li>Offline Engine performs skill taxonomy matching, TF-IDF cosine similarity &amp; weighted scoring.</li>
+    <li>Gemini AI Engine semantically evaluates resume and returns a structured JSON report.</li>
+    <li>Career DNA Engine classifies candidate into 8 archetypes with per-axis radar scores.</li>
+    <li>System stores candidate profile, AI summary, strengths, weaknesses &amp; interview questions.</li>
+    <li>Dashboard displays real-time stats, skill heatmaps, and archetype distribution charts.</li>
+    <li>Recruiter views detailed AI report, updates status, and adds private notes.</li>
+    <li><strong>★ AI Resume Coach</strong> provides a live multi-turn chat grounded in candidate context.</li>
+  </ol>
+
+  <div class="footer">
+    <div><span>PROJECT ID:</span> FSJ-INTERN-060</div>
+    <div><span>DOMAIN:</span> Human Resources &amp; Talent Acquisition</div>
+    <div><span>NOVELTY:</span> AI Resume Coach · Gemini AI · Career DNA</div>
+  </div>
+
+</div>
+</body>
+</html>
