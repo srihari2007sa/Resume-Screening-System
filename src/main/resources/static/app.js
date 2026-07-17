@@ -28,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initDragAndDrop();
     initBatchDragAndDrop();
     registerEventListeners();
+    registerCoachListeners();
     updateAnalytics();
     loadDnaSection();
     initKeyboardShortcuts();
@@ -73,6 +74,7 @@ function initSPA() {
             else if (targetId === 'analytics-section') updateAnalytics();
             else if (targetId === 'compare-section') refreshCompareList();
             else if (targetId === 'dna-section') loadDnaSection();
+            else if (targetId === 'coach-section') initCoachSection();
         });
     });
 
@@ -477,6 +479,11 @@ async function loadScreenings() {
         if (!r.ok) throw new Error('Failed to fetch screenings');
         state.screenings = await r.json();
         renderScreenings();
+        // Refresh coach dropdown whenever screenings update
+        const coachSection = document.getElementById('coach-section');
+        if (coachSection && coachSection.classList.contains('active')) {
+            initCoachSection();
+        }
     } catch (err) { console.error('Error loading screenings:', err); }
 }
 
@@ -1336,6 +1343,20 @@ function initCoachSection() {
     // Populate the result dropdown
     const select = document.getElementById('coach-result-select');
     if (!select) return;
+
+    // If screenings not yet loaded, fetch them first then retry
+    if (state.screenings.length === 0) {
+        fetch(`${API_BASE}/api/screen/results`)
+            .then(r => r.json())
+            .then(data => {
+                state.screenings = data;
+                renderScreenings();
+                initCoachSection(); // retry now that data is loaded
+            })
+            .catch(err => console.error('Coach: failed to load screenings', err));
+        return;
+    }
+
     select.innerHTML = '<option value="" disabled selected>Select a screening result...</option>';
 
     const sorted = [...state.screenings].sort((a,b) => new Date(b.screenedAt) - new Date(a.screenedAt));
@@ -1588,16 +1609,7 @@ function renderCoachMarkdown(text) {
     return html;
 }
 
-// Wire into SPA navigation
-const _origInitSPA = initSPA;
+// Register coach event listeners once on load
 document.addEventListener('DOMContentLoaded', () => {
-    // Patch SPA nav to also trigger coach init
-    const coachNavItem = document.querySelector('.nav-item[href="#coach"]');
-    if (coachNavItem) {
-        coachNavItem.addEventListener('click', () => {
-            initCoachSection();
-        });
-    }
-    // Register coach event listeners once
     registerCoachListeners();
 });
