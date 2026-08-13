@@ -17,9 +17,11 @@ WORKDIR /app
 
 COPY --from=build /app/target/*.jar app.jar
 
-# Railway injects PORT env var; fall back to 8081 for local Docker runs
 EXPOSE 8081
 
 ENTRYPOINT ["java", \
   "-Djava.security.egd=file:/dev/./urandom", \
+  "-XX:+UseContainerSupport", \
+  "-XX:MaxRAMPercentage=75.0", \
+  "-Dspring.profiles.active=prod", \
   "-jar", "app.jar"]
