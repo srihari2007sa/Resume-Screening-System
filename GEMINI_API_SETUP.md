@@ -13,7 +13,13 @@ If you're seeing "Error 429" in the AI Coach, it means your Gemini API key has e
 1. Visit: https://aistudio.google.com/app/apikey
 2. Sign in with your Google account
 3. Click **"Create API Key"**
-4. Copy the generated key (starts with `AIzaSy...`)
+4. Copy the generated key
+
+**API Key Formats:**
+- **Standard keys**: Start with `AIzaSy...` (39 characters)
+- **Service Account keys**: Start with `AQ.` (newer format, supported!)
+
+Both formats are now fully supported by the application.
 
 ### 2. Update Your `.env` File
 
@@ -51,7 +57,16 @@ DB_PASSWORD=srihari2007sa
 ## Common Issues
 
 ### Issue: "Invalid API key"
-**Solution:** Make sure your key starts with `AIzaSy` and is exactly 39 characters
+**Solution:** 
+- Standard keys start with `AIzaSy` and are 39 characters
+- Service account keys start with `AQ.` (also supported)
+- Make sure there are no extra spaces or quotes
+
+### Issue: "Error 404 - Model not found"
+**Solution:** 
+- This was fixed! The app now automatically detects `AQ.` keys
+- It will retry with the correct Interactions API endpoint
+- Just refresh the page and try again
 
 ### Issue: "Rate limit exceeded" (429)
 **Solutions:**
