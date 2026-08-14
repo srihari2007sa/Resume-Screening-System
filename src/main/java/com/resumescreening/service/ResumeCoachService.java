@@ -54,7 +54,7 @@ public class ResumeCoachService {
     private String defaultApiKey;
 
     private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(30))
@@ -144,82 +144,9 @@ public class ResumeCoachService {
                 .timeout(Duration.ofSeconds(60))
                 .build();
 
-        // Retry logic with exponential backoff for transient errors
-        HttpResponse<String> response = null;
-        int maxRetries = 2;
-        int retryDelayMs = 1000;
-        
-        for (int attempt = 0; attempt <= maxRetries; attempt++) {
-            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-            
-            // Success - break out
-            if (response.statusCode() == 200) {
-                break;
-            }
-            
-            // Handle AQ. API keys (403/404) - they need different endpoint
-            if ((response.statusCode() == 403 || response.statusCode() == 404) && activeKey.startsWith("AQ.")) {
-                System.out.println("AQ. API key detected. Retrying with Interactions API endpoint...");
-                String interactionsUrl = "https://generativelanguage.googleapis.com/v1beta/interactions";
-                
-                // Build interaction payload - simpler format
-                JSONObject interactionsPayload = new JSONObject();
-                interactionsPayload.put("model", "gemini-1.5-flash");
-                
-                // Convert the conversation to a single prompt
-                StringBuilder fullPrompt = new StringBuilder();
-                for (int i = 0; i < contents.length(); i++) {
-                    JSONObject turn = contents.getJSONObject(i);
-                    String role = turn.getString("role");
-                    JSONArray parts = turn.getJSONArray("parts");
-                    String text = parts.getJSONObject(0).getString("text");
-                    
-                    if (role.equals("user")) {
-                        fullPrompt.append("User: ").append(text).append("\n\n");
-                    } else {
-                        fullPrompt.append("Assistant: ").append(text).append("\n\n");
-                    }
-                }
-                
-                interactionsPayload.put("input", fullPrompt.toString());
-                
-                HttpRequest interactionsRequest = HttpRequest.newBuilder()
-                        .uri(URI.create(interactionsUrl))
-                        .header("Content-Type", "application/json")
-                        .header("x-goog-api-key", activeKey)
-                        .POST(HttpRequest.BodyPublishers.ofString(interactionsPayload.toString()))
-                        .timeout(Duration.ofSeconds(60))
-                        .build();
-                
-                response = httpClient.send(interactionsRequest, HttpResponse.BodyHandlers.ofString());
-                System.out.println("Interactions API response: " + response.statusCode());
-                
-                if (response.statusCode() == 200) {
-                    // Parse interactions response format
-                    try {
-                        JSONObject interactionsResponse = new JSONObject(response.body());
-                        String outputText = extractTextFromInteractionsResponse(interactionsResponse);
-                        if (outputText != null && !outputText.trim().isEmpty()) {
-                            return outputText.trim();
-                        }
-                    } catch (Exception e) {
-                        System.err.println("Failed to parse Interactions API response: " + e.getMessage());
-                    }
-                }
-                break; // Don't retry after interactions attempt
-            }
-            
-            // Don't retry on other client errors (400, 401)
-            if (response.statusCode() >= 400 && response.statusCode() < 500 && 
-                response.statusCode() != 403 && response.statusCode() != 404) {
-                break;
-            }
-            
-            // Retry on server errors (5xx) with exponential backoff
-            if (attempt < maxRetries && response.statusCode() >= 500) {
-                Thread.sleep(retryDelayMs * (long) Math.pow(2, attempt));
-            }
-        }
+        System.out.println("[AI Coach] Calling Gemini API...");
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println("[AI Coach] Response status: " + response.statusCode());
 
         if (response.statusCode() != 200) {
             // Enhanced error handling with specific messages
@@ -299,38 +226,5 @@ public class ResumeCoachService {
 
                "Always give specific, actionable advice based on THIS candidate's actual resume content. " +
                "Do not give generic advice. Reference specific skills, projects, or gaps from the data above.";
-    }
-    
-    /**
-     * Extracts plain text from the Interactions API response format.
-     */
-    private String extractTextFromInteractionsResponse(JSONObject response) {
-        // Interactions API: response.steps[].modelOutput.content[].text.text
-        try {
-            JSONArray steps = response.optJSONArray("steps");
-            if (steps != null) {
-                for (int i = 0; i < steps.length(); i++) {
-                    JSONObject step = steps.getJSONObject(i);
-                    JSONObject modelOutput = step.optJSONObject("modelOutput");
-                    if (modelOutput != null) {
-                        JSONArray content = modelOutput.optJSONArray("content");
-                        if (content != null) {
-                            for (int j = 0; j < content.length(); j++) {
-                                JSONObject part = content.getJSONObject(j);
-                                JSONObject textObj = part.optJSONObject("text");
-                                if (textObj != null && textObj.has("text")) {
-                                    return textObj.getString("text");
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-            // Fallback: try outputText field
-            if (response.has("outputText")) return response.getString("outputText");
-        } catch (Exception e) {
-            System.err.println("Could not parse Interactions API response: " + e.getMessage());
-        }
-        return "";
     }
 }
