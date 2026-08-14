@@ -144,11 +144,50 @@ public class ResumeCoachService {
                 .timeout(Duration.ofSeconds(60))
                 .build();
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        // Retry logic with exponential backoff for transient errors
+        HttpResponse<String> response = null;
+        int maxRetries = 2;
+        int retryDelayMs = 1000;
+        
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            
+            // Success - break out
+            if (response.statusCode() == 200) {
+                break;
+            }
+            
+            // Don't retry on client errors (400, 401, 403) or rate limit (429)
+            if (response.statusCode() >= 400 && response.statusCode() < 500) {
+                break;
+            }
+            
+            // Retry on server errors (5xx) with exponential backoff
+            if (attempt < maxRetries && response.statusCode() >= 500) {
+                Thread.sleep(retryDelayMs * (long) Math.pow(2, attempt));
+            }
+        }
 
         if (response.statusCode() != 200) {
-            return "AI Coach is temporarily unavailable. Error " + response.statusCode() +
-                   ". Please check your Gemini API key in Settings.";
+            // Enhanced error handling with specific messages
+            String errorBody = response.body();
+            switch (response.statusCode()) {
+                case 429:
+                    return "⚠️ AI Coach rate limit reached. The Gemini API key has exceeded its quota. " +
+                           "Please wait a few minutes and try again, or upgrade your API key at https://aistudio.google.com/";
+                case 401:
+                    return "❌ Invalid API key. Please check your Gemini API key in Settings. " +
+                           "Get a valid key from https://aistudio.google.com/app/apikey";
+                case 403:
+                    return "🚫 API access forbidden. Your API key may have restrictions. " +
+                           "Check your key settings at https://aistudio.google.com/";
+                case 400:
+                    return "⚠️ Invalid request format. Error details: " + 
+                           (errorBody.length() > 200 ? errorBody.substring(0, 200) : errorBody);
+                default:
+                    return "AI Coach is temporarily unavailable. Error " + response.statusCode() +
+                           ". Please check your Gemini API key in Settings.";
+            }
         }
 
         // Parse the response
