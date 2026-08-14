@@ -40,8 +40,8 @@ public class GeminiAiService {
 
         String prompt = buildPrompt(candidate, jobDescription);
 
-        // gemini-2.0-flash-exp - experimental model with better availability
-        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
+        // gemini-1.5-flash - stable model available for all users
+        String url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
 
         JSONObject payload = new JSONObject();
         JSONArray parts = new JSONArray();
@@ -81,7 +81,7 @@ public class GeminiAiService {
             System.out.println("Retrying with Interactions API endpoint for AQ. auth key...");
             String interactionsUrl = "https://generativelanguage.googleapis.com/v1beta/interactions";
             JSONObject interactionsPayload = new JSONObject();
-            interactionsPayload.put("model", "gemini-2.0-flash-exp");
+            interactionsPayload.put("model", "gemini-1.5-flash");
             interactionsPayload.put("input", prompt);
 
             HttpRequest retryRequest = HttpRequest.newBuilder()
