@@ -52,9 +52,18 @@ public class ResumeCoachService {
 
     @Value("${gemini.api.key:}")
     private String defaultApiKey;
+    
+    @Value("${openai.api.key:}")
+    private String openaiApiKey;
+    
+    @Value("${anthropic.api.key:}")
+    private String anthropicApiKey;
 
+    private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
+    private static final String ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+    
     private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent";
 
     private final HttpClient httpClient = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(30))
@@ -72,10 +81,300 @@ public class ResumeCoachService {
      * @return AI coach response text
      */
     public String chat(Long resultId, String userMessage, List<Map<String, String>> chatHistory, String apiKey) throws Exception {
-        String activeKey = (defaultApiKey != null && !defaultApiKey.trim().isEmpty()) ? defaultApiKey : apiKey;
-        if (activeKey == null || activeKey.trim().isEmpty()) {
-            return "Gemini API key is not configured. Please set it in Settings to use the AI Resume Coach.";
+        // Load context first
+        ScreeningResult result = screeningResultRepository.findById(resultId)
+                .orElseThrow(() -> new IllegalArgumentException("Screening result not found: " + resultId));
+
+        Candidate candidate = result.getCandidate();
+        JobDescription job = result.getJobDescription();
+        
+        // Try Anthropic Claude first (most reliable free tier!)
+        if (anthropicApiKey != null && !anthropicApiKey.trim().isEmpty()) {
+            try {
+                System.out.println("[AI Coach] Trying Anthropic Claude...");
+                return chatWithAnthropic(resultId, userMessage, chatHistory);
+            } catch (Exception e) {
+                System.err.println("[AI Coach] Anthropic failed: " + e.getMessage());
+                // Fall through to next option
+            }
         }
+        
+        // Try OpenAI if key is available
+        if (openaiApiKey != null && !openaiApiKey.trim().isEmpty()) {
+            try {
+                System.out.println("[AI Coach] Trying OpenAI...");
+                return chatWithOpenAI(resultId, userMessage, chatHistory);
+            } catch (Exception e) {
+                System.err.println("[AI Coach] OpenAI failed: " + e.getMessage());
+                // Fall through to next option
+            }
+        }
+        
+        // Try Gemini if key is available
+        String activeKey = (defaultApiKey != null && !defaultApiKey.trim().isEmpty()) ? defaultApiKey : apiKey;
+        if (activeKey != null && !activeKey.trim().isEmpty()) {
+            try {
+                System.out.println("[AI Coach] Trying Gemini...");
+                return chatWithGemini(resultId, userMessage, chatHistory, activeKey);
+            } catch (Exception e) {
+                System.err.println("[AI Coach] Gemini failed: " + e.getMessage());
+                // Fall through to simple coach
+            }
+        }
+        
+        // Simple rule-based coach (always works - no API needed!)
+        System.out.println("[AI Coach] All APIs unavailable, using simple rule-based coach");
+        return generateSimpleCoachResponse(candidate, job, result, userMessage);
+    }
+    
+    /**
+     * Simple rule-based coach - works without any API!
+     */
+    private String generateSimpleCoachResponse(Candidate candidate, JobDescription job, ScreeningResult result, String message) {
+        String lowerMsg = message.toLowerCase();
+        
+        // Parse what the user is asking about
+        if (lowerMsg.contains("improve") || lowerMsg.contains("better") || lowerMsg.contains("enhance")) {
+            return String.format("**How %s can improve for %s:**\n\n" +
+                    "Based on the screening (score: %.0f%%), here are specific recommendations:\n\n" +
+                    "**Skill Gaps to Address:**\n%s\n\n" +
+                    "**Actionable Steps:**\n" +
+                    "1. Add projects demonstrating the missing skills\n" +
+                    "2. Get certifications in key areas: %s\n" +
+                    "3. Update resume to highlight relevant experience\n" +
+                    "4. Add quantifiable achievements (e.g., 'Improved performance by 30%%')\n\n" +
+                    "*This is a simple AI coach response. For advanced AI coaching, please add credits to OpenAI or configure a valid Gemini API key.*",
+                    candidate.getName(), job.getTitle(),
+                    result.getMatchScore(),
+                    result.getAiWeaknesses() != null ? result.getAiWeaknesses() : "No major gaps identified",
+                    job.getRequiredSkills());
+        }
+        
+        if (lowerMsg.contains("skill") || lowerMsg.contains("learn")) {
+            String[] requiredSkills = job.getRequiredSkills().split(",");
+            String[] candidateSkills = (candidate.getExtractedSkills() != null ? candidate.getExtractedSkills() : "").split(",");
+            
+            StringBuilder missing = new StringBuilder();
+            for (String req : requiredSkills) {
+                boolean found = false;
+                for (String has : candidateSkills) {
+                    if (has.trim().equalsIgnoreCase(req.trim())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    missing.append("• ").append(req.trim()).append("\n");
+                }
+            }
+            
+            return String.format("**Skills Analysis for %s:**\n\n" +
+                    "**Required Skills:** %s\n\n" +
+                    "**Current Skills:** %s\n\n" +
+                    "**Skills to Learn:**\n%s\n" +
+                    "**Learning Resources:**\n" +
+                    "• Online courses: Udemy, Coursera, Pluralsight\n" +
+                    "• Practice projects on GitHub\n" +
+                    "• Join relevant communities and forums\n\n" +
+                    "*This is a simple AI coach response.*",
+                    candidate.getName(),
+                    job.getRequiredSkills(),
+                    candidate.getExtractedSkills() != null ? candidate.getExtractedSkills() : "None extracted",
+                    missing.length() > 0 ? missing.toString() : "All required skills present!");
+        }
+        
+        if (lowerMsg.contains("cover letter") || lowerMsg.contains("letter")) {
+            return String.format("**Cover Letter Template for %s:**\n\n" +
+                    "Dear Hiring Manager,\n\n" +
+                    "I am writing to express my interest in the %s position at your organization. " +
+                    "With %s years of experience and expertise in %s, I am confident I can contribute significantly to your team.\n\n" +
+                    "**Key Qualifications:**\n%s\n\n" +
+                    "I am particularly excited about this opportunity because [add specific reason]. " +
+                    "My background in [add relevant experience] aligns perfectly with your requirements.\n\n" +
+                    "I would welcome the opportunity to discuss how my skills can benefit your team.\n\n" +
+                    "Best regards,\n%s\n\n" +
+                    "*This is a template. Customize it with specific details.*",
+                    job.getTitle(),
+                    job.getTitle(),
+                    candidate.getExperienceYears() != null ? candidate.getExperienceYears() : 0,
+                    candidate.getExtractedSkills() != null ? candidate.getExtractedSkills() : "relevant skills",
+                    result.getAiStrengths() != null ? result.getAiStrengths() : "Strong technical background",
+                    candidate.getName());
+        }
+        
+        // Default response
+        return String.format("**AI Coach for %s applying to %s**\n\n" +
+                "**Current Match:** %.0f%% (%s)\n\n" +
+                "**Strengths:**\n%s\n\n" +
+                "**Areas for Improvement:**\n%s\n\n" +
+                "**Quick Tips:**\n" +
+                "• Ask me 'How can I improve?' for detailed recommendations\n" +
+                "• Ask 'What skills should I learn?' for skill gap analysis\n" +
+                "• Ask 'Write a cover letter' for a template\n\n" +
+                "*This is a simple AI coach. For advanced AI responses, add OpenAI credits or configure Gemini API.*",
+                candidate.getName(), job.getTitle(),
+                result.getMatchScore(), result.getMatchStatus(),
+                result.getAiStrengths() != null ? result.getAiStrengths() : "Good overall profile",
+                result.getAiWeaknesses() != null ? result.getAiWeaknesses() : "Minor skill gaps");
+    }
+    
+    /**
+     * Chat using Anthropic Claude (best free tier!)
+     */
+    private String chatWithAnthropic(Long resultId, String userMessage, List<Map<String, String>> chatHistory) throws Exception {
+        // Load context
+        ScreeningResult result = screeningResultRepository.findById(resultId)
+                .orElseThrow(() -> new IllegalArgumentException("Screening result not found: " + resultId));
+
+        Candidate candidate = result.getCandidate();
+        JobDescription job = result.getJobDescription();
+        String systemContext = buildSystemContext(candidate, job, result);
+
+        // Build messages array for Anthropic
+        JSONArray messages = new JSONArray();
+        
+        // Add conversation history
+        if (chatHistory != null) {
+            for (Map<String, String> turn : chatHistory) {
+                String role = turn.getOrDefault("role", "user");
+                String text = turn.getOrDefault("text", "");
+                if (!text.trim().isEmpty()) {
+                    // Convert Gemini's "model" role to Anthropic's "assistant" role
+                    String anthropicRole = role.equals("model") ? "assistant" : role;
+                    messages.put(new JSONObject()
+                            .put("role", anthropicRole)
+                            .put("content", text));
+                }
+            }
+        }
+        
+        // Add current user message
+        messages.put(new JSONObject()
+                .put("role", "user")
+                .put("content", userMessage));
+
+        // Build Anthropic request
+        JSONObject payload = new JSONObject();
+        payload.put("model", "claude-3-5-sonnet-20241022"); // Latest Claude model
+        payload.put("system", systemContext); // Anthropic uses system parameter
+        payload.put("messages", messages);
+        payload.put("max_tokens", 1024);
+        payload.put("temperature", 0.7);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(ANTHROPIC_URL))
+                .header("Content-Type", "application/json")
+                .header("x-api-key", anthropicApiKey)
+                .header("anthropic-version", "2023-06-01")
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+                .timeout(Duration.ofSeconds(60))
+                .build();
+
+        System.out.println("[AI Coach] Using Anthropic Claude...");
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println("[AI Coach] Anthropic response status: " + response.statusCode());
+
+        if (response.statusCode() != 200) {
+            String errorBody = response.body();
+            System.err.println("[AI Coach] Anthropic error: " + errorBody);
+            throw new Exception("Anthropic API error " + response.statusCode());
+        }
+
+        // Parse Anthropic response
+        try {
+            JSONObject jsonResponse = new JSONObject(response.body());
+            String responseText = jsonResponse
+                    .getJSONArray("content")
+                    .getJSONObject(0)
+                    .getString("text");
+            return responseText.trim();
+        } catch (Exception e) {
+            throw new Exception("Failed to parse Anthropic response");
+        }
+    }
+    
+    /**
+     * Chat using OpenAI GPT-4 (more reliable!)
+     */
+    private String chatWithOpenAI(Long resultId, String userMessage, List<Map<String, String>> chatHistory) throws Exception {
+        // Load context
+        ScreeningResult result = screeningResultRepository.findById(resultId)
+                .orElseThrow(() -> new IllegalArgumentException("Screening result not found: " + resultId));
+
+        Candidate candidate = result.getCandidate();
+        JobDescription job = result.getJobDescription();
+        String systemContext = buildSystemContext(candidate, job, result);
+
+        // Build messages array for OpenAI
+        JSONArray messages = new JSONArray();
+        
+        // System message
+        messages.put(new JSONObject()
+                .put("role", "system")
+                .put("content", systemContext));
+        
+        // Add conversation history
+        if (chatHistory != null) {
+            for (Map<String, String> turn : chatHistory) {
+                String role = turn.getOrDefault("role", "user");
+                String text = turn.getOrDefault("text", "");
+                if (!text.trim().isEmpty()) {
+                    // Convert Gemini's "model" role to OpenAI's "assistant" role
+                    String openaiRole = role.equals("model") ? "assistant" : role;
+                    messages.put(new JSONObject()
+                            .put("role", openaiRole)
+                            .put("content", text));
+                }
+            }
+        }
+        
+        // Add current user message
+        messages.put(new JSONObject()
+                .put("role", "user")
+                .put("content", userMessage));
+
+        // Build OpenAI request
+        JSONObject payload = new JSONObject();
+        payload.put("model", "gpt-4o-mini"); // Fast and affordable
+        payload.put("messages", messages);
+        payload.put("max_tokens", 1024);
+        payload.put("temperature", 0.7);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(OPENAI_URL))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + openaiApiKey)
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+                .timeout(Duration.ofSeconds(60))
+                .build();
+
+        System.out.println("[AI Coach] Using OpenAI GPT-4...");
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println("[AI Coach] OpenAI response status: " + response.statusCode());
+
+        if (response.statusCode() != 200) {
+            System.err.println("[AI Coach] OpenAI error: " + response.body());
+            return "⚠️ AI Coach temporarily unavailable (OpenAI error " + response.statusCode() + "). Please try again.";
+        }
+
+        // Parse OpenAI response
+        try {
+            JSONObject jsonResponse = new JSONObject(response.body());
+            String responseText = jsonResponse
+                    .getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content");
+            return responseText.trim();
+        } catch (Exception e) {
+            return "Sorry, I couldn't parse the AI response. Please try again.";
+        }
+    }
+    
+    /**
+     * Chat using Gemini (original implementation)
+     */
+    private String chatWithGemini(Long resultId, String userMessage, List<Map<String, String>> chatHistory, String activeKey) throws Exception {
 
         // Load context from the screening result
         ScreeningResult result = screeningResultRepository.findById(resultId)
@@ -149,25 +448,10 @@ public class ResumeCoachService {
         System.out.println("[AI Coach] Response status: " + response.statusCode());
 
         if (response.statusCode() != 200) {
-            // Enhanced error handling with specific messages
+            // Throw exception so fallback coach can activate
             String errorBody = response.body();
-            switch (response.statusCode()) {
-                case 429:
-                    return "⚠️ AI Coach rate limit reached. The Gemini API key has exceeded its quota. " +
-                           "Please wait a few minutes and try again, or upgrade your API key at https://aistudio.google.com/";
-                case 401:
-                    return "❌ Invalid API key. Please check your Gemini API key in Settings. " +
-                           "Get a valid key from https://aistudio.google.com/app/apikey";
-                case 403:
-                    return "🚫 API access forbidden. Your API key may have restrictions. " +
-                           "Check your key settings at https://aistudio.google.com/";
-                case 400:
-                    return "⚠️ Invalid request format. Error details: " + 
-                           (errorBody.length() > 200 ? errorBody.substring(0, 200) : errorBody);
-                default:
-                    return "AI Coach is temporarily unavailable. Error " + response.statusCode() +
-                           ". Please check your Gemini API key in Settings.";
-            }
+            System.err.println("[AI Coach] Gemini error " + response.statusCode() + ": " + errorBody);
+            throw new Exception("Gemini API error " + response.statusCode());
         }
 
         // Parse the response
@@ -182,7 +466,7 @@ public class ResumeCoachService {
                     .getString("text");
             return responseText.trim();
         } catch (Exception e) {
-            return "Sorry, I couldn't parse the AI response. Please try again.";
+            throw new Exception("Failed to parse Gemini response: " + e.getMessage());
         }
     }
 
