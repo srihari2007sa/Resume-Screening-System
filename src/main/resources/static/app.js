@@ -1044,14 +1044,9 @@ function registerEventListeners() {
 
     // Settings save
     document.getElementById('btn-save-settings').onclick = () => {
-        const key = document.getElementById('settings-api-key').value.trim();
-        localStorage.setItem('kit_ai_gemini_key', key);
-        localStorage.setItem('talentpulse_gemini_key', key);
-        document.getElementById('screen-api-key').value = key;
-        const batchKey = document.getElementById('batch-api-key');
-        if (batchKey) batchKey.value = key;
-        localStorage.setItem('kit_ai_db_mode', state.dbProfile);
-        toggleDbBadge(state.dbProfile);
+        // Groq API key is configured on server - no need to save from UI
+        // const key = document.getElementById('settings-api-key').value.trim();
+        // localStorage.setItem('kit_ai_gemini_key', key);
         toast('Settings saved successfully!', 'success');
     };
 
