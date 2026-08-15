@@ -23,6 +23,9 @@ public class ScreeningService {
     private OfflineScreeningService offlineScreeningService;
 
     @Autowired
+    private GroqAiService groqAiService;
+
+    @Autowired
     private GeminiAiService geminiAiService;
 
     @Autowired
@@ -34,6 +37,9 @@ public class ScreeningService {
     @Autowired
     private ScreeningResultRepository screeningResultRepository;
 
+    @org.springframework.beans.factory.annotation.Value("${groq.api.key:}")
+    private String defaultGroqApiKey;
+    
     @org.springframework.beans.factory.annotation.Value("${gemini.api.key:}")
     private String defaultGeminiApiKey;
 
@@ -46,8 +52,9 @@ public class ScreeningService {
      */
     @Transactional
     public ScreeningResult screenResume(MultipartFile file, Long jobId, String geminiApiKey) throws Exception {
-        // Resolve API Key: prioritize application.properties config if set, otherwise fallback to browser header key
-        String activeApiKey = (defaultGeminiApiKey != null && !defaultGeminiApiKey.trim().isEmpty()) ? defaultGeminiApiKey : geminiApiKey;
+        // Try Groq first (primary AI), then Gemini as fallback
+        String activeGroqKey = defaultGroqApiKey;
+        String activeGeminiKey = (defaultGeminiApiKey != null && !defaultGeminiApiKey.trim().isEmpty()) ? defaultGeminiApiKey : geminiApiKey;
 
         // Fetch the corresponding Job Description
         JobDescription job = jobDescriptionRepository.findById(jobId)
@@ -85,21 +92,49 @@ public class ScreeningService {
         // Save candidate initially to generate database ID
         candidate = candidateRepository.save(candidate);
 
-        // 3. Perform screening
+        // 3. Perform screening - try Groq first, then Gemini, then offline
         ScreeningResult result;
-        if (activeApiKey != null && !activeApiKey.trim().isEmpty()) {
+        
+        // Try Groq AI first
+        if (activeGroqKey != null && !activeGroqKey.trim().isEmpty()) {
             try {
-                // Generative AI Screening
-                result = geminiAiService.screenWithGemini(candidate, job, activeApiKey);
+                System.out.println("[Screening] Using Groq AI (Llama 3.3)...");
+                result = groqAiService.screenWithGroq(candidate, job, activeGroqKey);
             } catch (Exception e) {
-                // Log and Fallback to offline scoring if Gemini fails (e.g. invalid key or network issue)
                 e.printStackTrace();
-                System.err.println("Gemini AI failed: " + e.getMessage() + ". Falling back to high-performance Offline Engine.");
+                System.err.println("[Screening] Groq AI failed: " + e.getMessage() + ". Trying Gemini...");
+                
+                // Try Gemini as fallback
+                if (activeGeminiKey != null && !activeGeminiKey.trim().isEmpty()) {
+                    try {
+                        System.out.println("[Screening] Using Gemini AI...");
+                        result = geminiAiService.screenWithGemini(candidate, job, activeGeminiKey);
+                    } catch (Exception e2) {
+                        e2.printStackTrace();
+                        System.err.println("[Screening] Gemini also failed: " + e2.getMessage() + ". Using offline engine.");
+                        result = offlineScreeningService.screen(candidate, job);
+                        result.setAiSummary(result.getAiSummary() + " (Note: Both Groq and Gemini failed, offline engine used as fallback.)");
+                    }
+                } else {
+                    // No Gemini key, use offline
+                    result = offlineScreeningService.screen(candidate, job);
+                    result.setAiSummary(result.getAiSummary() + " (Note: Groq API failed, offline engine used as fallback. Error: " + e.getMessage() + ")");
+                }
+            }
+        } else if (activeGeminiKey != null && !activeGeminiKey.trim().isEmpty()) {
+            // No Groq key, try Gemini
+            try {
+                System.out.println("[Screening] Using Gemini AI...");
+                result = geminiAiService.screenWithGemini(candidate, job, activeGeminiKey);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.err.println("[Screening] Gemini AI failed: " + e.getMessage() + ". Using offline engine.");
                 result = offlineScreeningService.screen(candidate, job);
                 result.setAiSummary(result.getAiSummary() + " (Note: Gemini API failed, offline engine was used as fallback. Error: " + e.getMessage() + ")");
             }
         } else {
-            // Core Offline NLP Scoring
+            // No AI keys available, use offline
+            System.out.println("[Screening] No AI keys available, using offline heuristics engine.");
             result = offlineScreeningService.screen(candidate, job);
         }
 
@@ -119,7 +154,8 @@ public class ScreeningService {
      */
     @Transactional
     public ScreeningResult rescreenCandidate(Long candidateId, Long jobId, String geminiApiKey) throws Exception {
-        String activeApiKey = (defaultGeminiApiKey != null && !defaultGeminiApiKey.trim().isEmpty()) ? defaultGeminiApiKey : geminiApiKey;
+        String activeGroqKey = defaultGroqApiKey;
+        String activeGeminiKey = (defaultGeminiApiKey != null && !defaultGeminiApiKey.trim().isEmpty()) ? defaultGeminiApiKey : geminiApiKey;
 
         Candidate candidate = candidateRepository.findById(candidateId)
                 .orElseThrow(() -> new IllegalArgumentException("Candidate not found for ID: " + candidateId));
@@ -132,12 +168,36 @@ public class ScreeningService {
                 .orElseThrow(() -> new IllegalArgumentException("Job Description not found for ID: " + jobId));
 
         ScreeningResult result;
-        if (activeApiKey != null && !activeApiKey.trim().isEmpty()) {
+        
+        // Try Groq first
+        if (activeGroqKey != null && !activeGroqKey.trim().isEmpty()) {
             try {
-                result = geminiAiService.screenWithGemini(candidate, job, activeApiKey);
+                System.out.println("[Re-Screening] Using Groq AI (Llama 3.3)...");
+                result = groqAiService.screenWithGroq(candidate, job, activeGroqKey);
             } catch (Exception e) {
                 e.printStackTrace();
-                System.err.println("Gemini AI failed on re-screen: " + e.getMessage() + ". Falling back to Offline Engine.");
+                System.err.println("[Re-Screening] Groq failed: " + e.getMessage() + ". Trying Gemini...");
+                
+                if (activeGeminiKey != null && !activeGeminiKey.trim().isEmpty()) {
+                    try {
+                        result = geminiAiService.screenWithGemini(candidate, job, activeGeminiKey);
+                    } catch (Exception e2) {
+                        e2.printStackTrace();
+                        System.err.println("[Re-Screening] Gemini also failed. Using offline engine.");
+                        result = offlineScreeningService.screen(candidate, job);
+                        result.setAiSummary(result.getAiSummary() + " (Both Groq and Gemini failed on re-screen.)");
+                    }
+                } else {
+                    result = offlineScreeningService.screen(candidate, job);
+                    result.setAiSummary(result.getAiSummary() + " (Groq fallback — re-screen. Error: " + e.getMessage() + ")");
+                }
+            }
+        } else if (activeGeminiKey != null && !activeGeminiKey.trim().isEmpty()) {
+            try {
+                result = geminiAiService.screenWithGemini(candidate, job, activeGeminiKey);
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.err.println("[Re-Screening] Gemini failed: " + e.getMessage() + ". Using offline engine.");
                 result = offlineScreeningService.screen(candidate, job);
                 result.setAiSummary(result.getAiSummary() + " (Gemini fallback — re-screen. Error: " + e.getMessage() + ")");
             }
