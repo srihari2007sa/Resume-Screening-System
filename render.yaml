@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: resume-screening-system
+    env: docker
+    repo: https://github.com/srihari2007sa/Resume-Screening-System.git
+    branch: main
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: GROQ_API_KEY
+        value: your_groq_api_key_here
+      - key: SPRING_PROFILES_ACTIVE
+        value: production
+      - key: PORT
+        value: 10000
+    healthCheckPath: /actuator/health
