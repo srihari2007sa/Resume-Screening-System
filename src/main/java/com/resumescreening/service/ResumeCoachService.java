@@ -59,12 +59,12 @@ public class ResumeCoachService {
     @Value("${anthropic.api.key:}")
     private String anthropicApiKey;
     
-    @Value("${github.token:}")
-    private String githubToken;
+    @Value("${groq.api.key:}")
+    private String groqApiKey;
 
     private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
     private static final String ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-    private static final String GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions";
+    private static final String GROQ_URL = "https://api.groq.com/openai/v1/chat/completions";
     
     private static final String GEMINI_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
@@ -92,13 +92,13 @@ public class ResumeCoachService {
         Candidate candidate = result.getCandidate();
         JobDescription job = result.getJobDescription();
         
-        // Try GitHub Models first (FREE and reliable!)
-        if (githubToken != null && !githubToken.trim().isEmpty()) {
+        // Try Groq first (FREE and super fast!)
+        if (groqApiKey != null && !groqApiKey.trim().isEmpty()) {
             try {
-                System.out.println("[AI Coach] Trying GitHub Models (GPT-4o)...");
-                return chatWithGitHubModels(resultId, userMessage, chatHistory);
+                System.out.println("[AI Coach] Trying Groq AI (Llama 3)...");
+                return chatWithGroq(resultId, userMessage, chatHistory);
             } catch (Exception e) {
-                System.err.println("[AI Coach] GitHub Models failed: " + e.getMessage());
+                System.err.println("[AI Coach] Groq failed: " + e.getMessage());
                 // Fall through to next option
             }
         }
@@ -143,9 +143,9 @@ public class ResumeCoachService {
     }
     
     /**
-     * Chat using GitHub Models (FREE GPT-4o!)
+     * Chat using Groq AI (FREE Llama 3!)
      */
-    private String chatWithGitHubModels(Long resultId, String userMessage, List<Map<String, String>> chatHistory) throws Exception {
+    private String chatWithGroq(Long resultId, String userMessage, List<Map<String, String>> chatHistory) throws Exception {
         // Load context
         ScreeningResult result = screeningResultRepository.findById(resultId)
                 .orElseThrow(() -> new IllegalArgumentException("Screening result not found: " + resultId));
@@ -182,29 +182,29 @@ public class ResumeCoachService {
                 .put("role", "user")
                 .put("content", userMessage));
 
-        // Build GitHub Models request
+        // Build Groq request
         JSONObject payload = new JSONObject();
-        payload.put("model", "gpt-4o"); // FREE via GitHub!
+        payload.put("model", "llama-3.3-70b-versatile"); // FREE and fast!
         payload.put("messages", messages);
         payload.put("max_tokens", 1024);
         payload.put("temperature", 0.7);
 
         HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(GITHUB_MODELS_URL))
+                .uri(URI.create(GROQ_URL))
                 .header("Content-Type", "application/json")
-                .header("Authorization", "Bearer " + githubToken)
+                .header("Authorization", "Bearer " + groqApiKey)
                 .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
                 .timeout(Duration.ofSeconds(60))
                 .build();
 
-        System.out.println("[AI Coach] Using GitHub Models GPT-4o...");
+        System.out.println("[AI Coach] Using Groq Llama 3...");
         HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-        System.out.println("[AI Coach] GitHub Models response status: " + response.statusCode());
+        System.out.println("[AI Coach] Groq response status: " + response.statusCode());
 
         if (response.statusCode() != 200) {
             String errorBody = response.body();
-            System.err.println("[AI Coach] GitHub Models error: " + errorBody);
-            throw new Exception("GitHub Models API error " + response.statusCode());
+            System.err.println("[AI Coach] Groq error: " + errorBody);
+            throw new Exception("Groq API error " + response.statusCode());
         }
 
         // Parse response (same format as OpenAI)
@@ -217,7 +217,7 @@ public class ResumeCoachService {
                     .getString("content");
             return responseText.trim();
         } catch (Exception e) {
-            throw new Exception("Failed to parse GitHub Models response");
+            throw new Exception("Failed to parse Groq response");
         }
     }
     
