@@ -309,15 +309,15 @@ async function runScreening(e) {
     let apiKey = '';
     if (state.activeEngine === 'gemini') {
         apiKey = document.getElementById('screen-api-key').value.trim();
-        if (!apiKey) { log('Error: Gemini API Key is missing.', 'error-line'); terminalBadge.textContent = 'Failed'; terminalBadge.className = 'status-indicator idle'; runBtn.disabled = false; return; }
-        log('Generative AI screening active: Gemini 2.5 Flash selected.', 'success-line');    } else {
+        if (!apiKey) { log('Error: Groq API Key is missing.', 'error-line'); terminalBadge.textContent = 'Failed'; terminalBadge.className = 'status-indicator idle'; runBtn.disabled = false; return; }
+        log('Generative AI screening active: Groq AI (Llama 3.3) selected.', 'success-line');    } else {
         log('Offline screening active: Pure Java NLP matching enabled.', 'text-muted');
     }
     log(`Target Job ID: ${jobId}`, 'text-muted');
     log(`Uploading: ${state.selectedFile.name} (${Math.round(state.selectedFile.size/1024)} KB)...`, 'text-muted');
 
     const logSteps = ['Executing Tika engine to extract content...', 'Tika extraction successful.', 'Identifying candidate identifiers...', 'Running skill taxonomy indexing...', 'Matching experience vectors...', 'Computing Career DNA fingerprint...'];
-    if (state.activeEngine === 'gemini') logSteps.push('Calling Gemini 2.5 Flash model...');
+    if (state.activeEngine === 'gemini') logSteps.push('Calling Groq AI (Llama 3.3 70B)...');
     else logSteps.push('Calculating TF-IDF cosine similarities...');
 
     let logIdx = 0;
