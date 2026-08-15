@@ -239,4 +239,19 @@ public class ScreeningController {
         screeningResultRepository.deleteById(id);
         return ResponseEntity.ok().build();
     }
+
+    /**
+     * Clear all old results to start fresh.
+     */
+    @DeleteMapping("/results/clear-all")
+    public ResponseEntity<?> clearAllResults() {
+        try {
+            screeningResultRepository.deleteAll();
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "All screening results cleared successfully");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error clearing results: " + e.getMessage());
+        }
+    }
 }

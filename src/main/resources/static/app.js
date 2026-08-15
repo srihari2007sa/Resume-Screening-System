@@ -509,7 +509,9 @@ function renderScreenings() {
         const initials = item.candidate.name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
         const scoreClass = item.matchScore >= 75 ? 'score-high' : item.matchScore < 50 ? 'score-low' : 'score-mid';
         const statusClass = item.matchStatus === 'Shortlisted' ? 'badge-success' : item.matchStatus === 'Rejected' ? 'badge-danger' : 'badge-review';
-        const engineBadge = item.screeningMode === 'GEMINI_AI'
+        const engineBadge = item.screeningMode === 'GROQ_AI'
+            ? `<span class="badge badge-engine-ai"><i class="fa-solid fa-brain"></i> Groq AI</span>`
+            : item.screeningMode === 'GEMINI_AI'
             ? `<span class="badge badge-engine-ai"><i class="fa-solid fa-brain"></i> Gemini</span>`
             : `<span class="badge badge-engine-offline"><i class="fa-solid fa-database"></i> Offline</span>`;
 
@@ -571,7 +573,7 @@ function showCandidateReport(item) {
     document.getElementById('detail-candidate-phone').textContent = item.candidate.phone || 'Not Provided';
     document.getElementById('detail-candidate-exp').textContent = `${item.candidate.experienceYears || 0} Years`;
     document.getElementById('detail-candidate-edu').textContent = item.candidate.education || 'Not Specified';
-    document.getElementById('detail-candidate-engine').textContent = item.screeningMode === 'GEMINI_AI' ? 'Google Gemini AI' : 'Offline Heuristics';
+    document.getElementById('detail-candidate-engine').textContent = item.screeningMode === 'GROQ_AI' ? 'Groq AI (Llama 3.3)' : item.screeningMode === 'GEMINI_AI' ? 'Google Gemini AI' : 'Offline Heuristics';
     document.getElementById('detail-candidate-job-target').textContent = item.jobDescription.title;
 
     const score = Math.round(item.matchScore);
@@ -776,7 +778,7 @@ function renderCompareTable(candidates, container) {
         }},
         { label: 'Experience', key: 'experienceYears', render: (v) => `<td>${v || 0} yrs</td>` },
         { label: 'Education', key: 'education', render: (v) => `<td>${v || 'N/A'}</td>` },
-        { label: 'Engine', key: 'screeningMode', render: (v) => `<td>${v === 'GEMINI_AI' ? '🤖 Gemini AI' : '⚙️ Offline'}</td>` },
+        { label: 'Engine', key: 'screeningMode', render: (v) => `<td>${v === 'GROQ_AI' ? '🤖 Groq AI' : v === 'GEMINI_AI' ? '🤖 Gemini AI' : '⚙️ Offline'}</td>` },
         { label: 'DNA Archetype', key: 'careerDnaProfile', render: (v) => {
             if (!v) return '<td class="text-muted">—</td>';
             try { const d = typeof v === 'string' ? JSON.parse(v) : v; return `<td><span class="dna-archetype-pill">${d.dominantArchetype || '—'}</span></td>`; } catch { return '<td>—</td>'; }
