@@ -58,9 +58,13 @@ public class ResumeCoachService {
     
     @Value("${anthropic.api.key:}")
     private String anthropicApiKey;
+    
+    @Value("${github.token:}")
+    private String githubToken;
 
     private static final String OPENAI_URL = "https://api.openai.com/v1/chat/completions";
     private static final String ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
+    private static final String GITHUB_MODELS_URL = "https://models.inference.ai.azure.com/chat/completions";
     
     private static final String GEMINI_URL =
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent";
@@ -88,7 +92,18 @@ public class ResumeCoachService {
         Candidate candidate = result.getCandidate();
         JobDescription job = result.getJobDescription();
         
-        // Try Anthropic Claude first (most reliable free tier!)
+        // Try GitHub Models first (FREE and reliable!)
+        if (githubToken != null && !githubToken.trim().isEmpty()) {
+            try {
+                System.out.println("[AI Coach] Trying GitHub Models (GPT-4o)...");
+                return chatWithGitHubModels(resultId, userMessage, chatHistory);
+            } catch (Exception e) {
+                System.err.println("[AI Coach] GitHub Models failed: " + e.getMessage());
+                // Fall through to next option
+            }
+        }
+        
+        // Try Anthropic Claude if key is available
         if (anthropicApiKey != null && !anthropicApiKey.trim().isEmpty()) {
             try {
                 System.out.println("[AI Coach] Trying Anthropic Claude...");
@@ -125,6 +140,85 @@ public class ResumeCoachService {
         // Simple rule-based coach (always works - no API needed!)
         System.out.println("[AI Coach] All APIs unavailable, using simple rule-based coach");
         return generateSimpleCoachResponse(candidate, job, result, userMessage);
+    }
+    
+    /**
+     * Chat using GitHub Models (FREE GPT-4o!)
+     */
+    private String chatWithGitHubModels(Long resultId, String userMessage, List<Map<String, String>> chatHistory) throws Exception {
+        // Load context
+        ScreeningResult result = screeningResultRepository.findById(resultId)
+                .orElseThrow(() -> new IllegalArgumentException("Screening result not found: " + resultId));
+
+        Candidate candidate = result.getCandidate();
+        JobDescription job = result.getJobDescription();
+        String systemContext = buildSystemContext(candidate, job, result);
+
+        // Build messages array
+        JSONArray messages = new JSONArray();
+        
+        // System message
+        messages.put(new JSONObject()
+                .put("role", "system")
+                .put("content", systemContext));
+        
+        // Add conversation history
+        if (chatHistory != null) {
+            for (Map<String, String> turn : chatHistory) {
+                String role = turn.getOrDefault("role", "user");
+                String text = turn.getOrDefault("text", "");
+                if (!text.trim().isEmpty()) {
+                    // Convert Gemini's "model" role to "assistant" role
+                    String chatRole = role.equals("model") ? "assistant" : role;
+                    messages.put(new JSONObject()
+                            .put("role", chatRole)
+                            .put("content", text));
+                }
+            }
+        }
+        
+        // Add current user message
+        messages.put(new JSONObject()
+                .put("role", "user")
+                .put("content", userMessage));
+
+        // Build GitHub Models request
+        JSONObject payload = new JSONObject();
+        payload.put("model", "gpt-4o"); // FREE via GitHub!
+        payload.put("messages", messages);
+        payload.put("max_tokens", 1024);
+        payload.put("temperature", 0.7);
+
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(GITHUB_MODELS_URL))
+                .header("Content-Type", "application/json")
+                .header("Authorization", "Bearer " + githubToken)
+                .POST(HttpRequest.BodyPublishers.ofString(payload.toString()))
+                .timeout(Duration.ofSeconds(60))
+                .build();
+
+        System.out.println("[AI Coach] Using GitHub Models GPT-4o...");
+        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        System.out.println("[AI Coach] GitHub Models response status: " + response.statusCode());
+
+        if (response.statusCode() != 200) {
+            String errorBody = response.body();
+            System.err.println("[AI Coach] GitHub Models error: " + errorBody);
+            throw new Exception("GitHub Models API error " + response.statusCode());
+        }
+
+        // Parse response (same format as OpenAI)
+        try {
+            JSONObject jsonResponse = new JSONObject(response.body());
+            String responseText = jsonResponse
+                    .getJSONArray("choices")
+                    .getJSONObject(0)
+                    .getJSONObject("message")
+                    .getString("content");
+            return responseText.trim();
+        } catch (Exception e) {
+            throw new Exception("Failed to parse GitHub Models response");
+        }
     }
     
     /**
