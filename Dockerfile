@@ -29,5 +29,6 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
 
 ENTRYPOINT ["java", \
   "-Xmx512m", \
+  "-Dspring.profiles.active=railway", \
   "-Djava.security.egd=file:/dev/./urandom", \
   "-jar", "app.jar"]
