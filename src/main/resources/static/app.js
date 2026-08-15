@@ -307,10 +307,10 @@ async function runScreening(e) {
 
     log('Initializing screening pipeline...', 'text-muted');
     let apiKey = '';
+    // Groq API key is configured on server - no need for user input
     if (state.activeEngine === 'gemini') {
-        apiKey = document.getElementById('screen-api-key').value.trim();
-        if (!apiKey) { log('Error: Groq API Key is missing.', 'error-line'); terminalBadge.textContent = 'Failed'; terminalBadge.className = 'status-indicator idle'; runBtn.disabled = false; return; }
-        log('Generative AI screening active: Groq AI (Llama 3.3) selected.', 'success-line');    } else {
+        log('Generative AI screening active: Groq AI (Llama 3.3) selected.', 'success-line');
+    } else {
         log('Offline screening active: Pure Java NLP matching enabled.', 'text-muted');
     }
     log(`Target Job ID: ${jobId}`, 'text-muted');
@@ -999,7 +999,8 @@ function registerEventListeners() {
         state.activeEngine = 'gemini';
         document.getElementById('engine-gemini').classList.add('active');
         document.getElementById('engine-offline').classList.remove('active');
-        document.getElementById('gemini-key-input-container').classList.remove('hidden');
+        // API key field stays hidden - Groq is configured on server
+        // document.getElementById('gemini-key-input-container').classList.remove('hidden');
     });
 
     // Batch engine toggles
